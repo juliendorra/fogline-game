@@ -17,27 +17,37 @@
 
         #game-area {
             position: relative;
-            width: 90vw; /* Adjust width */
-            max-width: 1000px; /* Max width */
-            height: 70vh; /* Adjust height */
-            max-height: 700px; /* Max height */
+            width: 90vw;
+            /* Adjust width */
+            max-width: 1000px;
+            /* Max width */
+            height: 70vh;
+            /* Adjust height */
+            max-height: 700px;
+            /* Max height */
             margin: 20px auto;
             border: 1px solid #ccc;
-            overflow: auto; /* Add scroll if content overflows */
+            overflow: auto;
+            /* Add scroll if content overflows */
             background-color: #e8e8e8;
         }
 
         #board {
             position: relative;
             /* Let content define size, or set large fixed size if needed */
-             width: 2000px; /* Example large size */
-             height: 2000px; /* Example large size */
-             transform-origin: top left; /* For potential scaling */
+            width: 2000px;
+            /* Example large size */
+            height: 2000px;
+            /* Example large size */
+            transform-origin: top left;
+            /* For potential scaling */
         }
 
         .card {
-            width: 75px;  /* Portrait width */
-            height: 105px; /* Portrait height */
+            width: 75px;
+            /* Portrait width */
+            height: 105px;
+            /* Portrait height */
             border: 1px solid #333;
             border-radius: 5px;
             position: absolute;
@@ -59,21 +69,19 @@
         }
 
         .card.selected {
-             border: 2px solid gold;
-             box-shadow: 0 0 10px gold;
+            border: 2px solid gold;
+            box-shadow: 0 0 10px gold;
         }
 
         .card.hidden {
-            background-color: #888; /* Grey for hidden */
+            background-color: #888;
+            /* Grey for hidden */
             color: #ccc;
         }
+
         .card.hidden .unit-name,
         .card.hidden .stats {
             visibility: hidden;
-        }
-        .card.hidden .terrain-name {
-             color: #fff; /* Show terrain on hidden cards */
-             font-weight: bold;
         }
 
         .unit-name {
@@ -91,13 +99,25 @@
             justify-content: space-around;
             margin-bottom: 5px;
         }
+
         .stats span {
-             display: inline-block;
-             padding: 2px 4px;
-             border-radius: 3px;
+            display: inline-block;
+            padding: 2px 4px;
+            border-radius: 3px;
         }
-        .attack { background-color: #ffcccb; border: 1px solid #f08080; } /* Light red */
-        .defense { background-color: #add8e6; border: 1px solid #87ceeb; } /* Light blue */
+
+        .attack {
+            background-color: #ffcccb;
+            border: 1px solid #f08080;
+        }
+
+        /* Light red */
+        .defense {
+            background-color: #add8e6;
+            border: 1px solid #87ceeb;
+        }
+
+        /* Light blue */
 
 
         .terrain-name {
@@ -113,22 +133,46 @@
         }
 
         /* Terrain specific background hints */
-        .terrain-Plains { background-image: linear-gradient(to bottom, #fdfdcf, #fafad2); }
-        .terrain-Forest { background-image: linear-gradient(to bottom, #dcedc8, #c8e6c9); }
-        .terrain-Mountain { background-image: linear-gradient(to bottom, #e0e0e0, #d5d5d5); }
+        .terrain-Plains {
+            background-image: linear-gradient(to bottom, #fdfdcf, #fafad2);
+        }
+
+        .terrain-Forest {
+            background-image: linear-gradient(to bottom, #dcedc8, #c8e6c9);
+        }
+
+        .terrain-Mountain {
+            background-image: linear-gradient(to bottom, #e0e0e0, #d5d5d5);
+        }
 
 
-        .player1 { border-left: 5px solid #4a90e2; }
-        .player2 { border-left: 5px solid #e94e77; }
+        .player1 {
+            border-left: 5px solid #4a90e2;
+        }
 
-        #info, #controls {
+        .player2 {
+            border-left: 5px solid #e94e77;
+        }
+
+        #info,
+        #controls {
             margin-top: 15px;
             text-align: center;
             width: 100%;
         }
-        #info span { margin: 0 15px; font-weight: bold; }
-        .player1-text { color: #4a90e2; }
-        .player2-text { color: #e94e77; }
+
+        #info span {
+            margin: 0 15px;
+            font-weight: bold;
+        }
+
+        .player1-text {
+            color: #4a90e2;
+        }
+
+        .player2-text {
+            color: #e94e77;
+        }
 
         button {
             padding: 8px 15px;
@@ -140,47 +184,75 @@
             border-radius: 4px;
             margin: 5px;
         }
-        button:hover { background-color: #4cae4c; }
+
+        button:hover {
+            background-color: #4cae4c;
+        }
 
         #defeated-units {
             margin-top: 20px;
             padding: 10px;
             border: 1px dashed #aaa;
-            min-height: 120px; /* Ensure space even when empty */
+            min-height: 120px;
+            /* Ensure space even when empty */
             width: 90%;
             max-width: 1000px;
             background-color: #f8f8f8;
             display: flex;
-            flex-wrap: wrap; /* Allow defeated cards to wrap */
-            align-items: flex-start; /* Align cards to the top */
-            gap: 5px; /* Spacing between defeated cards */
+            flex-wrap: wrap;
+            /* Allow defeated cards to wrap */
+            align-items: flex-start;
+            /* Align cards to the top */
+            gap: 5px;
+            /* Spacing between defeated cards */
         }
+
         #defeated-units h4 {
             width: 100%;
             text-align: center;
             margin: 0 0 10px 0;
             color: #555;
         }
-        .defeated-card {
-             width: 60px; /* Smaller size */
-             height: 90px;
-             border: 1px solid #666;
-             border-radius: 3px;
-             background-color: #ccc;
-             display: flex;
-             flex-direction: column;
-             justify-content: space-between;
-             align-items: center;
-             padding: 3px;
-             box-sizing: border-box;
-             font-size: 10px;
-        }
-        .defeated-card .unit-name { font-size: 11px; font-weight: bold; margin-top: 3px;}
-        .defeated-card .stats { font-size: 9px; margin-bottom: 3px; }
-        .defeated-card .terrain-name { font-size: 8px; margin-bottom: 3px; }
-        .defeated-card.player1 { border-left: 3px solid #4a90e2; }
-        .defeated-card.player2 { border-left: 3px solid #e94e77; }
 
+        .defeated-card {
+            width: 60px;
+            /* Smaller size */
+            height: 90px;
+            border: 1px solid #666;
+            border-radius: 3px;
+            background-color: #ccc;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 3px;
+            box-sizing: border-box;
+            font-size: 10px;
+        }
+
+        .defeated-card .unit-name {
+            font-size: 11px;
+            font-weight: bold;
+            margin-top: 3px;
+        }
+
+        .defeated-card .stats {
+            font-size: 9px;
+            margin-bottom: 3px;
+        }
+
+        .defeated-card .terrain-name {
+            font-size: 8px;
+            margin-bottom: 3px;
+        }
+
+        .defeated-card.player1 {
+            border-left: 3px solid #4a90e2;
+        }
+
+        .defeated-card.player2 {
+            border-left: 3px solid #e94e77;
+        }
     </style>
 </head>
 
@@ -297,7 +369,7 @@
         function findCardIndexById(id) {
             return board.findIndex(card => card && card.id === id);
         }
-         function findCardById(id) {
+        function findCardById(id) {
             return board.find(card => card && card.id === id);
         }
 
@@ -317,13 +389,13 @@
                     return;
                 }
                 if (clickedCard.unit === 'HQ') {
-                     logMessage("HQ cannot move or attack.");
-                     return;
+                    logMessage("HQ cannot move or attack.");
+                    return;
                 }
-                 if (!clickedCard.unit) {
-                     logMessage("Cannot select an empty space.");
-                     return;
-                 }
+                if (!clickedCard.unit) {
+                    logMessage("Cannot select an empty space.");
+                    return;
+                }
 
                 // Reveal if hidden
                 if (clickedCard.hidden) {
@@ -333,8 +405,8 @@
 
                 selectedCardIndex = clickedCardIndex;
                 // Highlight selected card visually (optional)
-                 board.forEach(c => c.element?.classList.remove('selected'));
-                 clickedCard.element.classList.add('selected');
+                board.forEach(c => c.element?.classList.remove('selected'));
+                clickedCard.element.classList.add('selected');
 
             } else {
                 // --- Target selected ---
@@ -360,8 +432,8 @@
                 const terrainBlocks = terrainStats[targetTerrain]?.blocks.includes(attackerCard.unit);
 
                 if (!canEnter || terrainBlocks) {
-                     logMessage(`${attackerCard.unit} cannot move into ${targetTerrain}.`);
-                     return;
+                    logMessage(`${attackerCard.unit} cannot move into ${targetTerrain}.`);
+                    return;
                 }
 
 
@@ -371,26 +443,26 @@
                 }
 
                 if (!clickedCard.unit) {
-                     // --- Moving to empty adjacent tile ---
-                     logMessage(`Player ${currentPlayer} moved ${attackerCard.unit} to ${clickedCard.terrain}.`);
+                    // --- Moving to empty adjacent tile ---
+                    logMessage(`Player ${currentPlayer} moved ${attackerCard.unit} to ${clickedCard.terrain}.`);
 
-                     // Update board state
-                     clickedCard.unit = attackerCard.unit;
-                     clickedCard.owner = attackerCard.owner;
-                     clickedCard.hidden = false; // Moved unit is revealed
+                    // Update board state
+                    clickedCard.unit = attackerCard.unit;
+                    clickedCard.owner = attackerCard.owner;
+                    clickedCard.hidden = false; // Moved unit is revealed
 
-                     attackerCard.unit = null;
-                     attackerCard.owner = null;
-                     attackerCard.hidden = true; // Previous spot becomes empty/hidden visually
+                    attackerCard.unit = null;
+                    attackerCard.owner = null;
+                    attackerCard.hidden = true; // Previous spot becomes empty/hidden visually
 
-                     // Update positions set
-                     placedPositions.delete(`${attackerCard.x}_${attackerCard.y}`);
-                     placedPositions.add(`${clickedCard.x}_${clickedCard.y}`);
+                    // Update positions set
+                    placedPositions.delete(`${attackerCard.x}_${attackerCard.y}`);
+                    placedPositions.add(`${clickedCard.x}_${clickedCard.y}`);
 
-                     // Reset selection and switch player
-                     selectedCardIndex = null;
-                     currentPlayer = currentPlayer === 1 ? 2 : 1;
-                     isResolvingAttack = false; // Ensure this is false
+                    // Reset selection and switch player
+                    selectedCardIndex = null;
+                    currentPlayer = currentPlayer === 1 ? 2 : 1;
+                    isResolvingAttack = false; // Ensure this is false
 
                 } else {
                     // --- Attacking an enemy unit ---
@@ -403,7 +475,7 @@
                         logMessage(`Revealed defender: ${clickedCard.unit} on ${clickedCard.terrain}.`);
                         updateUI(); // Show the revealed defender card
                     } else {
-                         logMessage(`Attacking ${clickedCard.unit} on ${clickedCard.terrain}.`);
+                        logMessage(`Attacking ${clickedCard.unit} on ${clickedCard.terrain}.`);
                     }
 
 
@@ -413,11 +485,11 @@
                         isResolvingAttack = false; // Unlock actions after resolution
                     }, 1500); // 1.5 second delay
                 }
-                 // Update UI after move or before attack resolution starts
-                 updateUI();
+                // Update UI after move or before attack resolution starts
+                updateUI();
             }
-             // Update UI if only selecting/deselecting
-             if (!isResolvingAttack) updateUI();
+            // Update UI if only selecting/deselecting
+            if (!isResolvingAttack) updateUI();
         }
 
         function resolveAttack(attackerIndex, defenderIndex) {
@@ -454,8 +526,8 @@
             } else {
                 winner = defender;
                 loser = attacker;
-                 winnerIndex = defenderIndex;
-                 loserIndex = attackerIndex;
+                winnerIndex = defenderIndex;
+                loserIndex = attackerIndex;
                 logMessage(`Defender wins! ${defender.unit} defeats ${attacker.unit}.`);
             }
 
@@ -474,19 +546,19 @@
                 attacker.owner = null;
                 attacker.hidden = true; // Visually empty
 
-                 // Update positions set
-                 placedPositions.delete(`${attacker.x}_${attacker.y}`);
+                // Update positions set
+                placedPositions.delete(`${attacker.x}_${attacker.y}`);
 
             } else {
                 // Defender holds position, clear attacker's spot
-                 attacker.unit = null;
-                 attacker.owner = null;
-                 attacker.hidden = true; // Visually empty
+                attacker.unit = null;
+                attacker.owner = null;
+                attacker.hidden = true; // Visually empty
 
-                 // Update positions set
-                 placedPositions.delete(`${attacker.x}_${attacker.y}`);
-                 // Defender remains revealed
-                 defender.hidden = false;
+                // Update positions set
+                placedPositions.delete(`${attacker.x}_${attacker.y}`);
+                // Defender remains revealed
+                defender.hidden = false;
             }
 
 
@@ -498,36 +570,36 @@
 
             let gameOver = false;
             if (!hqP2) { // Player 1 captured Player 2's HQ
-                 logMessage(`Player 1 wins by capturing the HQ!`);
-                 gameOver = true;
+                logMessage(`Player 1 wins by capturing the HQ!`);
+                gameOver = true;
             } else if (!hqP1) { // Player 2 captured Player 1's HQ
-                 logMessage(`Player 2 wins by capturing the HQ!`);
-                 gameOver = true;
+                logMessage(`Player 2 wins by capturing the HQ!`);
+                gameOver = true;
             } else if (remainingUnitsP2 === 0) {
-                 logMessage(`Player 1 wins by eliminating all movable units!`);
-                 gameOver = true;
+                logMessage(`Player 1 wins by eliminating all movable units!`);
+                gameOver = true;
             } else if (remainingUnitsP1 === 0) {
-                 logMessage(`Player 2 wins by eliminating all movable units!`);
-                 gameOver = true;
+                logMessage(`Player 2 wins by eliminating all movable units!`);
+                gameOver = true;
             }
 
 
             // Reset selection and switch player if game not over
             selectedCardIndex = null;
-             if (!gameOver) {
+            if (!gameOver) {
                 currentPlayer = currentPlayer === 1 ? 2 : 1;
-             } else {
-                 // Disable further interaction or show overlay
-                 isResolvingAttack = true; // Keep locked if game over
-             }
+            } else {
+                // Disable further interaction or show overlay
+                isResolvingAttack = true; // Keep locked if game over
+            }
 
             updateUI(); // Update after resolution
         }
 
 
         function isAdjacent(card1, card2) {
-             // Check for null or undefined cards
-             if (!card1 || !card2) return false;
+            // Check for null or undefined cards
+            if (!card1 || !card2) return false;
             // Check horizontal adjacency
             const dx = Math.abs(card1.x - card2.x);
             const dy = Math.abs(card1.y - card2.y);
@@ -537,59 +609,59 @@
         function updateUI() {
             // Update cards on board
             board.forEach((card, i) => {
-                 if (!card || !card.element) return; // Skip if card was removed or element missing
+                if (!card || !card.element) return; // Skip if card was removed or element missing
 
-                 const div = card.element;
-                 div.className = `card player${card.owner || 0} terrain-${card.terrain}`; // Base classes
-                 if (card.hidden) div.classList.add('hidden');
-                 if (i === selectedCardIndex) div.classList.add('selected');
+                const div = card.element;
+                div.className = `card player${card.owner || 0} terrain-${card.terrain}`; // Base classes
+                if (card.hidden) div.classList.add('hidden');
+                if (i === selectedCardIndex) div.classList.add('selected');
 
-                 const unitNameDiv = div.querySelector('.unit-name');
-                 const statsDiv = div.querySelector('.stats');
-                 const attackSpan = statsDiv.querySelector('.attack');
-                 const defenseSpan = statsDiv.querySelector('.defense');
-                 const terrainNameDiv = div.querySelector('.terrain-name');
+                const unitNameDiv = div.querySelector('.unit-name');
+                const statsDiv = div.querySelector('.stats');
+                const attackSpan = statsDiv.querySelector('.attack');
+                const defenseSpan = statsDiv.querySelector('.defense');
+                const terrainNameDiv = div.querySelector('.terrain-name');
 
-                 terrainNameDiv.textContent = card.terrain || 'Unknown';
+                terrainNameDiv.textContent = card.terrain || 'Unknown';
 
-                 if (card.unit && !card.hidden) {
-                     unitNameDiv.textContent = card.unit;
-                     const stats = unitStats[card.unit];
-                     if (stats) {
-                         attackSpan.textContent = `A: ${stats.attack}`;
-                         defenseSpan.textContent = `D: ${stats.defense}`;
-                         statsDiv.style.visibility = 'visible';
-                     } else {
-                          attackSpan.textContent = `A: ?`;
-                          defenseSpan.textContent = `D: ?`;
-                          statsDiv.style.visibility = 'hidden'; // Hide stats if unknown unit somehow
-                     }
-                     unitNameDiv.style.visibility = 'visible';
-                 } else if (card.unit && card.hidden) {
-                      // Hidden card with a unit (e.g. after placement)
-                      unitNameDiv.textContent = '?'; // Show placeholder
-                      attackSpan.textContent = `A: ?`;
-                      defenseSpan.textContent = `D: ?`;
-                      unitNameDiv.style.visibility = 'hidden'; // Hide name
-                      statsDiv.style.visibility = 'hidden'; // Hide stats
-                 }
-                 else {
-                     // Empty spot (unit is null)
-                     unitNameDiv.textContent = '';
-                     attackSpan.textContent = `A: -`;
-                     defenseSpan.textContent = `D: -`;
-                     unitNameDiv.style.visibility = 'hidden';
-                     statsDiv.style.visibility = 'hidden';
-                     div.classList.add('hidden'); // Make empty spots look like hidden/fog
-                     div.style.cursor = 'default'; // No pointer for empty spots
-                 }
+                if (card.unit && !card.hidden) {
+                    unitNameDiv.textContent = card.unit;
+                    const stats = unitStats[card.unit];
+                    if (stats) {
+                        attackSpan.textContent = `A: ${stats.attack}`;
+                        defenseSpan.textContent = `D: ${stats.defense}`;
+                        statsDiv.style.visibility = 'visible';
+                    } else {
+                        attackSpan.textContent = `A: ?`;
+                        defenseSpan.textContent = `D: ?`;
+                        statsDiv.style.visibility = 'hidden'; // Hide stats if unknown unit somehow
+                    }
+                    unitNameDiv.style.visibility = 'visible';
+                } else if (card.unit && card.hidden) {
+                    // Hidden card with a unit (e.g. after placement)
+                    unitNameDiv.textContent = '?'; // Show placeholder
+                    attackSpan.textContent = `A: ?`;
+                    defenseSpan.textContent = `D: ?`;
+                    unitNameDiv.style.visibility = 'hidden'; // Hide name
+                    statsDiv.style.visibility = 'hidden'; // Hide stats
+                }
+                else {
+                    // Empty spot (unit is null)
+                    unitNameDiv.textContent = '';
+                    attackSpan.textContent = `A: -`;
+                    defenseSpan.textContent = `D: -`;
+                    unitNameDiv.style.visibility = 'hidden';
+                    statsDiv.style.visibility = 'hidden';
+                    div.classList.add('hidden'); // Make empty spots look like hidden/fog
+                    div.style.cursor = 'default'; // No pointer for empty spots
+                }
             });
 
-             // Update Info Bar
-             const infoDiv = document.getElementById('info');
-             const p1Units = board.filter(c => c && c.owner === 1 && c.unit).length;
-             const p2Units = board.filter(c => c && c.owner === 2 && c.unit).length;
-             infoDiv.innerHTML = `
+            // Update Info Bar
+            const infoDiv = document.getElementById('info');
+            const p1Units = board.filter(c => c && c.owner === 1 && c.unit).length;
+            const p2Units = board.filter(c => c && c.owner === 2 && c.unit).length;
+            infoDiv.innerHTML = `
                 <span class="player1-text">Player 1 Units: ${p1Units}</span> |
                 <span class="${currentPlayer === 1 ? 'player1-text' : 'player2-text'}">Current Turn: Player ${currentPlayer}</span> |
                 <span class="player2-text">Player 2 Units: ${p2Units}</span>
@@ -602,9 +674,9 @@
             defeatedUnits.forEach(defeated => {
                 const defeatedCardDiv = document.createElement('div');
                 defeatedCardDiv.className = `defeated-card player${defeated.owner} terrain-${defeated.terrain}`;
-                 const stats = unitStats[defeated.unit];
-                 const attack = stats ? stats.attack : '?';
-                 const defense = stats ? stats.defense : '?';
+                const stats = unitStats[defeated.unit];
+                const attack = stats ? stats.attack : '?';
+                const defense = stats ? stats.defense : '?';
                 defeatedCardDiv.innerHTML = `
                     <div class="unit-name">${defeated.unit}</div>
                     <div class="stats">
@@ -615,10 +687,10 @@
             });
         }
 
-         function logMessage(msg) {
-             document.getElementById('message-log').textContent = msg;
-             console.log(msg); // Also log to console for debugging
-         }
+        function logMessage(msg) {
+            document.getElementById('message-log').textContent = msg;
+            console.log(msg); // Also log to console for debugging
+        }
 
 
         function resetGame() {
@@ -664,17 +736,17 @@
 
                 // Find adjacent empty spots for all currently placed cards
                 board.forEach(card => {
-                     if (!card || !card.unit) return; // Skip empty spots
-                     const {x, y} = card;
-                     directions.forEach(([dx, dy]) => {
+                    if (!card || !card.unit) return; // Skip empty spots
+                    const { x, y } = card;
+                    directions.forEach(([dx, dy]) => {
                         const nx = x + dx;
                         const ny = y + dy;
                         const posKey = `${nx}_${ny}`;
                         if (!placedPositions.has(posKey)) {
-                             // Basic boundary check (optional, depends on board size goal)
-                             // if (nx >= 0 && ny >= 0 && nx < 2000 && ny < 2000) {
-                                availablePositions.set(posKey, { x: nx, y: ny });
-                             // }
+                            // Basic boundary check (optional, depends on board size goal)
+                            // if (nx >= 0 && ny >= 0 && nx < 2000 && ny < 2000) {
+                            availablePositions.set(posKey, { x: nx, y: ny });
+                            // }
                         }
                     });
                 });
@@ -685,16 +757,16 @@
                     break; // Prevent infinite loop
                 }
 
-                 // Pick a random available position
-                 const posArray = Array.from(availablePositions.values());
-                 const pos = posArray[Math.floor(Math.random() * posArray.length)];
+                // Pick a random available position
+                const posArray = Array.from(availablePositions.values());
+                const pos = posArray[Math.floor(Math.random() * posArray.length)];
 
                 // Place card for the current player
                 if (playerUnits[currentPlayer].length > 0) {
                     const pair = playerUnits[currentPlayer].pop();
 
-                     // TODO: Add validation here based on game rules (e.g., Tank cannot be placed on Mountain)
-                     // For now, just place it.
+                    // TODO: Add validation here based on game rules (e.g., Tank cannot be placed on Mountain)
+                    // For now, just place it.
                     placeCard(pos.x, pos.y, currentPlayer, pair.unit, pair.terrain);
                     lastPlaced.push({ x: pos.x, y: pos.y });
                 }
