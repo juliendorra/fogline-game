@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spatial Card-Based War Game Simulator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 10px;
+            background-color: #fafafa;
+        }
+
+        #board {
+            position: relative;
+            width: 800px;
+            height: 800px;
+            margin: auto;
+        }
+
+        .card {
+            width: 70px;
+            height: 70px;
+            border: 1px solid #555;
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            background-color: #ddd;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .hidden {
+            background-color: #666;
+        }
+
+        .unit {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            font-size: 14px;
+            color: white;
+        }
+
+        .terrain {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            font-size: 12px;
+        }
+
+        .player1 {
+            background-color: #4a90e2;
+        }
+
+        .player2 {
+            background-color: #e94e77;
+        }
+
+        #info,
+        #hands {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        button {
+            margin: 10px auto;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <h2 style="text-align:center;">Spatial War Card Game Simulator</h2>
+    <div id="board"></div>
+    <div id="hands"></div>
+    <div id="info"></div>
+    <button onclick="resetGame()">Reset Game</button>
+
+    <script>
+        let board = [];
+        let currentPlayer = 1;
+        let playerHands;
+        let placedPositions = [];
+        let selectedCard = null;
+        const unitTypes = ['HQ', 'Tank', 'Infantry', 'Artillery', 'Scout'];
+        const terrainTypes = ['Plains', 'Forest', 'Mountain'];
+
+        function randomItem(arr) {
+            return arr.splice(Math.floor(Math.random() * arr.length), 1)[0];
+        }
+
+        function placeCard(x, y, owner, unit, terrain) {
+            const card = { terrain, unit, hidden: true, owner, x, y };
+            board.push(card);
+            placedPositions.push(`${x}_${y}`);
+
+            const boardDiv = document.getElementById('board');
+            const cardDiv = document.createElement('div');
+            cardDiv.className = `card hidden player${owner}`;
+            cardDiv.style.left = `${x}px`;
+            cardDiv.style.top = `${y}px`;
+            cardDiv.dataset.index = board.length - 1;
+            cardDiv.onclick = () => handleCardClick(board.length - 1);
+            boardDiv.appendChild(cardDiv);
+        }
+
+        function handleCardClick(i) {
+            const card = board[i];
+
+            if (selectedCard === null) {
+                if (card.owner !== currentPlayer || !card.hidden) return;
+                selectedCard = i;
+                card.hidden = false;
+            } else {
+                if (selectedCard === i) return;
+                if (isAdjacent(board[selectedCard], card) && card.owner !== currentPlayer) {
+                    executeAttack(selectedCard, i);
+                    currentPlayer = currentPlayer === 1 ? 2 : 1;
+                }
+                selectedCard = null;
+            }
+            updateUI();
+        }
+
+        function executeAttack(from, to) {
+            const attacker = board[from];
+            const defender = board[to];
+
+            const attackerValue = unitTypes.indexOf(attacker.unit);
+            const defenderValue = unitTypes.indexOf(defender.unit);
+
+            if (attackerValue >= defenderValue) {
+                defender.unit = attacker.unit;
+                defender.owner = attacker.owner;
+                defender.hidden = false;
+                attacker.unit = null;
+                attacker.owner = null;
+                attacker.hidden = true;
+                alert(`Player ${currentPlayer} wins the battle!`);
+            } else {
+                attacker.unit = null;
+                attacker.owner = null;
+                attacker.hidden = true;
+                alert(`Player ${currentPlayer} loses the battle!`);
+            }
+        }
+
+        function isAdjacent(card1, card2) {
+            return (Math.abs(card1.x - card2.x) === 72 && card1.y === card2.y) ||
+                (card1.x === card2.x && Math.abs(card1.y - card2.y) === 72);
+        }
+
+        function updateUI() {
+            board.forEach((card, i) => {
+                const div = document.querySelector(`[data-index='${i}']`);
+                div.innerHTML = '';
+                div.className = 'card ' + (card.hidden ? 'hidden ' : '') + (card.owner === 1 ? 'player1 ' : 'player2 ');
+                if (card.unit && !card.hidden) {
+                    div.innerHTML = `<div class="unit">${card.unit}</div>`;
+                }
+                div.innerHTML += `<div class="terrain">${card.terrain}</div>`;
+                div.onclick = () => handleCardClick(i);
+            });
+            document.getElementById('hands').innerText = `Player 1 Cards Left: ${playerHands[1].length} | Player 2 Cards Left: ${playerHands[2].length}`;
+            document.getElementById('info').innerText = `Current Player: ${currentPlayer}`;
+        }
+
+        function resetGame() {
+            board = []; placedPositions = []; selectedCard = null;
+            playerHands = {
+                1: Array.from({ length: 8 }, () => ({ unit: randomItem([...unitTypes]), terrain: randomItem([...terrainTypes]) })),
+                2: Array.from({ length: 8 }, () => ({ unit: randomItem([...unitTypes]), terrain: randomItem([...terrainTypes]) }))
+            };
+            document.getElementById('board').innerHTML = '';
+
+            placeCard(365, 365, 1, randomItem(playerHands[1]).unit, randomItem(playerHands[1]).terrain);
+            currentPlayer = 2;
+
+            const directions = [[72, 0], [-72, 0], [0, 72], [0, -72]];
+            while (playerHands[1].length > 0 || playerHands[2].length > 0) {
+                let availablePositions = [];
+                placedPositions.forEach(pos => {
+                    const [x, y] = pos.split('_').map(Number);
+                    directions.forEach(([dx, dy]) => {
+                        const nx = x + dx, ny = y + dy;
+                        if (!placedPositions.includes(`${nx}_${ny}`)) availablePositions.push({ x: nx, y: ny });
+                    });
+                });
+                if (availablePositions.length === 0) break;
+                const pos = randomItem(availablePositions);
+                if (playerHands[currentPlayer].length > 0) {
+                    const pair = randomItem(playerHands[currentPlayer]);
+                    placeCard(pos.x, pos.y, currentPlayer, pair.unit, pair.terrain);
+                }
+                currentPlayer = currentPlayer === 1 ? 2 : 1;
+            }
+
+            currentPlayer = 1;
+            updateUI();
+        }
+
+        document.addEventListener("DOMContentLoaded", resetGame);
+    </script>
+</body>
+
+</html>
