@@ -113,6 +113,19 @@
 
         /* Light blue */
 
+        /* Disable hover for inactive player's cards */
+        .player1-turn .card.player2,
+        .player2-turn .card.player1 {
+            pointer-events: none; /* Disable mouse interactions */
+            opacity: 0.8; /* Optional: visually dim inactive cards */
+        }
+
+        /* Ensure active player's cards have default pointer events */
+        .player1-turn .card.player1,
+        .player2-turn .card.player2 {
+            pointer-events: auto;
+            opacity: 1;
+        }
 
         .terrain-name {
             font-size: 11px;
@@ -607,6 +620,14 @@
         }
 
         function updateUI() {
+            // Add/Remove body class based on current player for hover effects
+            document.body.classList.remove('player1-turn', 'player2-turn');
+            if (currentPlayer === 1) {
+                document.body.classList.add('player1-turn');
+            } else {
+                document.body.classList.add('player2-turn');
+            }
+
             // Update cards on board
             board.forEach((card, i) => {
                 if (!card || !card.element) return; // Skip if card was removed or element missing
