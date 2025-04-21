@@ -129,10 +129,10 @@ async function main() {
         iconMountain.width() !== ICON_SIZE || iconMountain.height() !== ICON_SIZE) {
         console.warn(`Warning: One or more icons do not match the expected size (${ICON_SIZE}x${ICON_SIZE}). They will be drawn at ${ICON_SIZE}x${ICON_SIZE}.`);
     }
-     if (bgPlayer1.width() !== CARD_WIDTH || bgPlayer1.height() !== CARD_HEIGHT ||
-         bgPlayer2.width() !== CARD_WIDTH || bgPlayer2.height() !== CARD_HEIGHT) {
-         console.warn(`Warning: Background images do not match the card dimensions (${CARD_WIDTH}x${CARD_HEIGHT}). They will be scaled.`);
-     }
+    if (bgPlayer1.width() !== CARD_WIDTH || bgPlayer1.height() !== CARD_HEIGHT ||
+        bgPlayer2.width() !== CARD_WIDTH || bgPlayer2.height() !== CARD_HEIGHT) {
+        console.warn(`Warning: Background images do not match the card dimensions (${CARD_WIDTH}x${CARD_HEIGHT}). They will be scaled.`);
+    }
 
 
     const terrainIcons = {
@@ -186,7 +186,7 @@ async function main() {
             }
 
             // Save the generated card
-            const outputFilename = `player${playerNum}_card_${cardNum}.png`;
+            const outputFilename = `terrain_player${playerNum}_card_${cardNum}.png`;
             const outputPath = path.join(OUTPUT_DIR, outputFilename);
 
             try {
