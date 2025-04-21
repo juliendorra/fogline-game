@@ -55,12 +55,10 @@
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             margin: 2.5px;
             /* Add margin to create space between cards */
+            cursor: default; /* Default cursor for all cards */
         }
 
-        .card:hover {
-            transform: translateY(-3px);
-            box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.3);
-        }
+        /* REMOVED general .card:hover rule */
 
         .card.selected {
             border: 2px solid gold;
@@ -113,19 +111,23 @@
 
         /* Light blue */
 
-        /* Disable hover for inactive player's cards */
-        .player1-turn .card.player2,
-        .player2-turn .card.player1 {
-            pointer-events: none; /* Disable mouse interactions */
-            opacity: 0.8; /* Optional: visually dim inactive cards */
+        /* --- New Rules for Cursor and Hover based on Action State --- */
+
+        .selectable-initial { cursor: pointer; } /* Select own unit */
+        .selectable-move { cursor: pointer; } /* Select empty tile to move */
+        .selectable-attack { cursor: crosshair; } /* Select enemy unit to attack */
+        .not-selectable { cursor: not-allowed; } /* Cannot select this tile */
+
+        /* Apply hover effect only to currently selectable cards */
+        .selectable-initial:hover,
+        .selectable-move:hover,
+        .selectable-attack:hover {
+            transform: translateY(-3px);
+            box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.3);
         }
 
-        /* Ensure active player's cards have default pointer events */
-        .player1-turn .card.player1,
-        .player2-turn .card.player2 {
-            pointer-events: auto;
-            opacity: 1;
-        }
+        /* All other cards keep the default cursor (set in .card) */
+
 
         .terrain-name {
             font-size: 11px;
@@ -620,22 +622,61 @@
         }
 
         function updateUI() {
-            // Add/Remove body class based on current player for hover effects
+            // Remove player turn classes from body - no longer needed for CSS hover/cursor
             document.body.classList.remove('player1-turn', 'player2-turn');
-            if (currentPlayer === 1) {
-                document.body.classList.add('player1-turn');
-            } else {
-                document.body.classList.add('player2-turn');
-            }
+            // We still need to know the current player for logic below
+
+            const attackerCard = selectedCardIndex !== null ? board[selectedCardIndex] : null;
 
             // Update cards on board
             board.forEach((card, i) => {
                 if (!card || !card.element) return; // Skip if card was removed or element missing
 
                 const div = card.element;
-                div.className = `card player${card.owner || 0} terrain-${card.terrain}`; // Base classes
+                // Reset base classes and remove selectable states from previous turn/state
+                div.className = `card player${card.owner || 0} terrain-${card.terrain}`;
+                div.classList.remove('selectable-initial', 'selectable-move', 'selectable-attack', 'not-selectable', 'selected');
+
                 if (card.hidden) div.classList.add('hidden');
-                if (i === selectedCardIndex) div.classList.add('selected');
+                if (i === selectedCardIndex) div.classList.add('selected'); // Highlight selected card
+
+                // --- Determine Selectable State ---
+                if (selectedCardIndex === null) {
+                    // State: Selecting initial unit
+                    if (card.owner === currentPlayer && card.unit) {
+                        div.classList.add('selectable-initial');
+                    } else {
+                        // Add not-selectable to others for clarity, though default cursor works
+                         div.classList.add('not-selectable');
+                    }
+                } else {
+                    // State: Unit selected, selecting target
+                    if (i === selectedCardIndex) {
+                        // The selected card itself is not a valid target
+                        div.classList.add('not-selectable');
+                    } else if (isAdjacent(attackerCard, card)) {
+                        // Check terrain validity for the *attacker* moving into the *target* terrain
+                        const targetTerrain = card.terrain;
+                        const canEnter = unitStats[attackerCard.unit]?.terrain.includes(targetTerrain);
+                        const terrainBlocks = terrainStats[targetTerrain]?.blocks.includes(attackerCard.unit);
+
+                        if (canEnter && !terrainBlocks) {
+                            if (card.unit === null) { // Empty, valid square
+                                div.classList.add('selectable-move');
+                            } else if (card.owner !== currentPlayer) { // Enemy unit
+                                div.classList.add('selectable-attack');
+                            } else { // Own unit
+                                div.classList.add('not-selectable');
+                            }
+                        } else { // Invalid terrain
+                            div.classList.add('not-selectable');
+                        }
+                    } else { // Not adjacent
+                        div.classList.add('not-selectable');
+                    }
+                }
+                // --- End Selectable State ---
+
 
                 const unitNameDiv = div.querySelector('.unit-name');
                 const statsDiv = div.querySelector('.stats');
@@ -674,7 +715,7 @@
                     unitNameDiv.style.visibility = 'hidden';
                     statsDiv.style.visibility = 'hidden';
                     div.classList.add('hidden'); // Make empty spots look like hidden/fog
-                    div.style.cursor = 'default'; // No pointer for empty spots
+                    // div.style.cursor = 'default'; // Already handled by base .card style and turn-specific CSS
                 }
             });
 
