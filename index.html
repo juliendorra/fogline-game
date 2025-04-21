@@ -28,37 +28,28 @@
 
         #board {
             display: inline-grid;
-            /* Use grid for layout, inline allows centering */
-            /* gap: 5px; Removed gap */
             padding: 27.5px;
-            /* Adjusted padding */
-
         }
 
         .card {
-            width: 75px;
-            /* Portrait width */
-            height: 105px;
-            /* Portrait height */
+            width: 75px; /* Portrait width */
+            height: 105px; /* Portrait height */
             border: 1px solid #333;
             border-radius: 5px;
-            /* position: absolute; Removed */
-            cursor: pointer;
+            position: relative; /* Needed for absolute positioning of edges */
+            cursor: default; /* Default cursor */
             background-color: #fff;
             box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            justify-content: space-between; /* Pushes stats down */
             align-items: center;
             padding: 5px;
             box-sizing: border-box;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
-            margin: 2.5px;
-            /* Add margin to create space between cards */
-            cursor: default; /* Default cursor for all cards */
+            margin: 2.5px; /* Space between cards */
+            overflow: hidden; /* Hide overflowing edge content if any */
         }
-
-        /* REMOVED general .card:hover rule */
 
         .card.selected {
             border: 2px solid gold;
@@ -66,13 +57,12 @@
         }
 
         .card.hidden {
-            background-color: #888;
-            /* Grey for hidden */
+            background-color: #888; /* Grey for hidden */
             color: #ccc;
         }
 
         .card.hidden .unit-name,
-        .card.hidden .stats {
+        .card.hidden .stats { /* Keep terrain edges visible */
             visibility: hidden;
         }
 
@@ -81,6 +71,7 @@
             font-weight: bold;
             text-align: center;
             margin-top: 5px;
+            z-index: 1; /* Above terrain edges */
         }
 
         .stats {
@@ -90,6 +81,7 @@
             display: flex;
             justify-content: space-around;
             margin-bottom: 5px;
+            z-index: 1; /* Above terrain edges */
         }
 
         .stats span {
@@ -98,27 +90,15 @@
             border-radius: 3px;
         }
 
-        .attack {
-            background-color: #ffcccb;
-            border: 1px solid #f08080;
-        }
+        .attack { background-color: #ffcccb; border: 1px solid #f08080; }
+        .defense { background-color: #add8e6; border: 1px solid #87ceeb; }
 
-        /* Light red */
-        .defense {
-            background-color: #add8e6;
-            border: 1px solid #87ceeb;
-        }
+        /* --- Cursor and Hover based on Action State --- */
+        .selectable-initial { cursor: pointer; }
+        .selectable-move { cursor: pointer; }
+        .selectable-attack { cursor: crosshair; }
+        .not-selectable { cursor: not-allowed; }
 
-        /* Light blue */
-
-        /* --- New Rules for Cursor and Hover based on Action State --- */
-
-        .selectable-initial { cursor: pointer; } /* Select own unit */
-        .selectable-move { cursor: pointer; } /* Select empty tile to move */
-        .selectable-attack { cursor: crosshair; } /* Select enemy unit to attack */
-        .not-selectable { cursor: not-allowed; } /* Cannot select this tile */
-
-        /* Apply hover effect only to currently selectable cards */
         .selectable-initial:hover,
         .selectable-move:hover,
         .selectable-attack:hover {
@@ -126,143 +106,75 @@
             box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.3);
         }
 
-        /* All other cards keep the default cursor (set in .card) */
-
-
-        .terrain-name {
-            font-size: 11px;
-            font-style: italic;
-            color: #555;
-            margin-bottom: 5px;
-            text-align: center;
-            width: 100%;
-            background-color: rgba(255, 255, 255, 0.7);
-            border-radius: 3px;
-            padding: 1px 0;
+        /* --- Terrain Edge Display --- */
+        .terrain-edges {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; /* Don't interfere with clicks */
+            z-index: 0; /* Behind unit info */
         }
-
-        /* Terrain specific background hints */
-        .terrain-Plains {
-            background-image: linear-gradient(to bottom, #fdfdcf, #fafad2);
+        .terrain-edge {
+            position: absolute;
+            font-size: 18px; /* Emoji size */
+            line-height: 1;
+            opacity: 0.8; /* Slightly faded */
         }
+        .edge-top { top: 2px; left: 50%; transform: translateX(-50%); }
+        .edge-right { top: 50%; right: 2px; transform: translateY(-50%); }
+        .edge-bottom { bottom: 2px; left: 50%; transform: translateX(-50%); }
+        .edge-left { top: 50%; left: 2px; transform: translateY(-50%); }
 
-        .terrain-Forest {
-            background-image: linear-gradient(to bottom, #dcedc8, #c8e6c9);
-        }
+        /* Removed terrain background hints */
 
-        .terrain-Mountain {
-            background-image: linear-gradient(to bottom, #e0e0e0, #d5d5d5);
-        }
+        .player1 { border-left: 5px solid #4a90e2; }
+        .player2 { border-left: 5px solid #e94e77; }
 
-
-        .player1 {
-            border-left: 5px solid #4a90e2;
-        }
-
-        .player2 {
-            border-left: 5px solid #e94e77;
-        }
-
-        #info,
-        #controls {
+        #info, #controls {
             margin-top: 15px;
             margin-bottom: 15px;
             text-align: center;
             width: 100%;
         }
-
-        #info span {
-            margin: 0 15px;
-            font-weight: bold;
-        }
-
-        .player1-text {
-            color: #4a90e2;
-        }
-
-        .player2-text {
-            color: #e94e77;
-        }
+        #info span { margin: 0 15px; font-weight: bold; }
+        .player1-text { color: #4a90e2; }
+        .player2-text { color: #e94e77; }
 
         button {
-            padding: 8px 15px;
-            font-size: 14px;
-            cursor: pointer;
-            background-color: #5cb85c;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            margin: 5px;
+            padding: 8px 15px; font-size: 14px; cursor: pointer;
+            background-color: #5cb85c; color: white; border: none;
+            border-radius: 4px; margin: 5px;
         }
-
-        button:hover {
-            background-color: #4cae4c;
-        }
+        button:hover { background-color: #4cae4c; }
 
         #defeated-units {
-            margin-top: 20px;
-            padding: 10px;
-            border: 1px dashed #aaa;
-            min-height: 120px;
-            /* Ensure space even when empty */
-            width: 90%;
-            max-width: 1000px;
-            background-color: #f8f8f8;
-            display: flex;
-            flex-wrap: wrap;
-            /* Allow defeated cards to wrap */
-            align-items: flex-start;
-            /* Align cards to the top */
-            gap: 5px;
-            /* Spacing between defeated cards */
+            margin-top: 20px; padding: 10px; border: 1px dashed #aaa;
+            min-height: 120px; width: 90%; max-width: 1000px;
+            background-color: #f8f8f8; display: flex; flex-wrap: wrap;
+            align-items: flex-start; gap: 5px;
         }
-
         #defeated-units h4 {
-            width: 100%;
-            text-align: center;
-            margin: 0 0 10px 0;
-            color: #555;
+            width: 100%; text-align: center; margin: 0 0 10px 0; color: #555;
         }
-
         .defeated-card {
-            width: 60px;
-            /* Smaller size */
-            height: 90px;
-            border: 1px solid #666;
-            border-radius: 3px;
-            background-color: #ccc;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            align-items: center;
-            padding: 3px;
-            box-sizing: border-box;
-            font-size: 10px;
+            width: 60px; height: 90px; border: 1px solid #666;
+            border-radius: 3px; background-color: #ccc; display: flex;
+            flex-direction: column; justify-content: space-between;
+            align-items: center; padding: 3px; box-sizing: border-box;
+            font-size: 10px; position: relative; /* For edges */
         }
+        .defeated-card .unit-name { font-size: 11px; font-weight: bold; margin-top: 3px; z-index: 1; }
+        .defeated-card .stats { font-size: 9px; margin-bottom: 3px; z-index: 1; }
+        /* Defeated cards also show edges */
+        .defeated-card .terrain-edges { visibility: visible !important; } /* Override hidden */
+        .defeated-card .terrain-edge { font-size: 12px; opacity: 0.6; }
+        .defeated-card .edge-top { top: 1px; }
+        .defeated-card .edge-right { right: 1px; }
+        .defeated-card .edge-bottom { bottom: 1px; }
+        .defeated-card .edge-left { left: 1px; }
 
-        .defeated-card .unit-name {
-            font-size: 11px;
-            font-weight: bold;
-            margin-top: 3px;
-        }
+        .defeated-card.player1 { border-left: 3px solid #4a90e2; }
+        .defeated-card.player2 { border-left: 3px solid #e94e77; }
 
-        .defeated-card .stats {
-            font-size: 9px;
-            margin-bottom: 3px;
-        }
-
-        .defeated-card .terrain-name {
-            font-size: 8px;
-            margin-bottom: 3px;
-        }
-
-        .defeated-card.player1 {
-            border-left: 3px solid #4a90e2;
-        }
-
-        .defeated-card.player2 {
-            border-left: 3px solid #e94e77;
-        }
     </style>
 </head>
 
@@ -285,37 +197,56 @@
     </div>
 
     <script>
-        let board = []; // Stores card objects { id, unit, terrain, hidden, owner, x, y, element }
+        let board = []; // Stores card objects { id, unit, terrain: {top, right, bottom, left}, hidden, owner, gridX, gridY, element }
         let currentPlayer = 1;
-        let playerUnits = {}; // { 1: [{unit, terrain}, ...], 2: [...] }
+        let playerUnits = {}; // { 1: [{unit, terrainCardIndex}, ...], 2: [...] }
         let placedPositions = new Set(); // Store "x_y" strings
         let selectedCardIndex = null; // Index in the board array
         let isResolvingAttack = false; // Prevent actions during attack resolution delay
-        let defeatedUnits = []; // Stores { unit, terrain, owner } of defeated units
+        let defeatedUnits = []; // Stores { unit, terrain: {top, right, bottom, left}, owner } of defeated units
         let nextCardId = 0; // Unique ID for each card
 
-        // Grid constants
         const START_GRID_COORD = 10; // Start placing cards around grid cell 10,10
 
-        // Removed pixel constants: CARD_WIDTH, CARD_HEIGHT, GAP, STEP_X, STEP_Y
+        // Terrain Types & Emojis
+        const TERRAIN_TYPES = {
+            PLAINS: 'Plains',
+            FOREST: 'Forest',
+            MOUNTAIN: 'Mountain'
+        };
+        const TERRAIN_EMOJIS = {
+            [TERRAIN_TYPES.PLAINS]: '🏞️',
+            [TERRAIN_TYPES.FOREST]: '🌲',
+            [TERRAIN_TYPES.MOUNTAIN]: '⛰️'
+        };
 
-        // Unit Stats based on Readme (Updated: HQ -> Mobile Command)
+        // Unit Stats (Movement based on terrain *type*)
         const unitStats = {
-            'Mobile Command': { attack: 1, defense: 2, quantity: 1, terrain: ['Plains'] }, // Can move on Plains
-            'Tank': { attack: 4, defense: 4, quantity: 2, terrain: ['Plains'] },
-            'Infantry': { attack: 3, defense: 3, quantity: 3, terrain: ['Plains', 'Forest', 'Mountain'] },
-            'Artillery': { attack: 5, defense: 1, quantity: 1, terrain: ['Plains'] },
-            'Special Ops': { attack: 3, defense: 1, quantity: 1, terrain: ['Plains', 'Forest', 'Mountain'] } // Replaced Scout
+            'Mobile Command': { attack: 1, defense: 2, quantity: 1, canTraverse: [TERRAIN_TYPES.PLAINS] },
+            'Tank': { attack: 4, defense: 4, quantity: 2, canTraverse: [TERRAIN_TYPES.PLAINS] },
+            'Infantry': { attack: 3, defense: 3, quantity: 3, canTraverse: [TERRAIN_TYPES.PLAINS, TERRAIN_TYPES.FOREST, TERRAIN_TYPES.MOUNTAIN] },
+            'Artillery': { attack: 5, defense: 1, quantity: 1, canTraverse: [TERRAIN_TYPES.PLAINS] },
+            'Special Ops': { attack: 3, defense: 1, quantity: 1, canTraverse: [TERRAIN_TYPES.PLAINS, TERRAIN_TYPES.FOREST, TERRAIN_TYPES.MOUNTAIN] }
         };
 
-        // Terrain Stats based on Readme
-        const terrainStats = {
-            'Plains': { quantity: 4, defenseBonus: 0, blocks: [] },
-            'Forest': { quantity: 2, defenseBonus: 1, blocks: ['Tank', 'Artillery'] },
-            'Mountain': { quantity: 2, defenseBonus: 0, blocks: ['Tank', 'Artillery'] } // Only Infantry/Special Ops can enter. Optional +1 def ignored for now.
+        // Terrain Rules (Defense bonus based on type)
+        const terrainRules = {
+            [TERRAIN_TYPES.PLAINS]: { defenseBonus: 0 },
+            [TERRAIN_TYPES.FOREST]: { defenseBonus: 1 },
+            [TERRAIN_TYPES.MOUNTAIN]: { defenseBonus: 0 }
         };
-        const allUnitTypes = Object.keys(unitStats);
-        const allTerrainTypes = Object.keys(terrainStats);
+
+        // The 8 Fixed Terrain Cards (Top, Right, Bottom, Left)
+        const fixedTerrainCards = [
+            { top: TERRAIN_TYPES.PLAINS, right: TERRAIN_TYPES.FOREST, bottom: TERRAIN_TYPES.PLAINS, left: TERRAIN_TYPES.FOREST },
+            { top: TERRAIN_TYPES.PLAINS, right: TERRAIN_TYPES.MOUNTAIN, bottom: TERRAIN_TYPES.PLAINS, left: TERRAIN_TYPES.MOUNTAIN },
+            { top: TERRAIN_TYPES.FOREST, right: TERRAIN_TYPES.PLAINS, bottom: TERRAIN_TYPES.FOREST, left: TERRAIN_TYPES.PLAINS },
+            { top: TERRAIN_TYPES.MOUNTAIN, right: TERRAIN_TYPES.PLAINS, bottom: TERRAIN_TYPES.MOUNTAIN, left: TERRAIN_TYPES.PLAINS },
+            { top: TERRAIN_TYPES.FOREST, right: TERRAIN_TYPES.FOREST, bottom: TERRAIN_TYPES.PLAINS, left: TERRAIN_TYPES.MOUNTAIN },
+            { top: TERRAIN_TYPES.MOUNTAIN, right: TERRAIN_TYPES.MOUNTAIN, bottom: TERRAIN_TYPES.PLAINS, left: TERRAIN_TYPES.FOREST },
+            { top: TERRAIN_TYPES.FOREST, right: TERRAIN_TYPES.MOUNTAIN, bottom: TERRAIN_TYPES.FOREST, left: TERRAIN_TYPES.PLAINS },
+            { top: TERRAIN_TYPES.MOUNTAIN, right: TERRAIN_TYPES.FOREST, bottom: TERRAIN_TYPES.MOUNTAIN, left: TERRAIN_TYPES.PLAINS }
+        ];
 
         function getUnitList() {
             const units = [];
@@ -327,16 +258,6 @@
             return units; // Should be 8 units total
         }
 
-        function getTerrainList() {
-            const terrains = [];
-            for (const type in terrainStats) {
-                for (let i = 0; i < terrainStats[type].quantity; i++) {
-                    terrains.push(type);
-                }
-            }
-            return terrains; // Should be 8 terrains total
-        }
-
         // Fisher-Yates Shuffle
         function shuffle(array) {
             for (let i = array.length - 1; i > 0; i--) {
@@ -346,37 +267,41 @@
             return array;
         }
 
-        // Updated placeCard for CSS Grid
-        function placeCard(gridX, gridY, owner, unit, terrain) {
+        // Place card with 4-sided terrain
+        function placeCard(gridX, gridY, owner, unit, terrainData) {
             const cardId = nextCardId++;
-            // Store gridX, gridY instead of pixel x, y
-            const card = { id: cardId, unit, terrain, hidden: true, owner, gridX, gridY, element: null };
+            const card = { id: cardId, unit, terrain: terrainData, hidden: true, owner, gridX, gridY, element: null };
             board.push(card);
             const gridKey = `${gridX}_${gridY}`;
             placedPositions.add(gridKey);
 
             const boardDiv = document.getElementById('board');
             const cardDiv = document.createElement('div');
-            cardDiv.className = `card hidden player${owner} terrain-${terrain}`;
-            // Set grid position using styles
+            // Remove terrain-X class, add player class
+            cardDiv.className = `card hidden player${owner}`;
             cardDiv.style.gridColumn = gridX;
             cardDiv.style.gridRow = gridY;
-            // Removed cardDiv.style.left and cardDiv.style.top
-            cardDiv.dataset.id = cardId; // Use unique ID
+            cardDiv.dataset.id = cardId;
             cardDiv.onclick = () => handleCardClick(cardId);
 
-            // Add structure for content
+            // Add structure for content including terrain edges
             cardDiv.innerHTML = `
+                <div class="terrain-edges">
+                    <span class="terrain-edge edge-top">${TERRAIN_EMOJIS[terrainData.top]}</span>
+                    <span class="terrain-edge edge-right">${TERRAIN_EMOJIS[terrainData.right]}</span>
+                    <span class="terrain-edge edge-bottom">${TERRAIN_EMOJIS[terrainData.bottom]}</span>
+                    <span class="terrain-edge edge-left">${TERRAIN_EMOJIS[terrainData.left]}</span>
+                </div>
                 <div class="unit-name">${unit || '?'}</div>
                 <div class="stats">
                     <span class="attack">A: ?</span>
                     <span class="defense">D: ?</span>
                 </div>
-                <div class="terrain-name">${terrain}</div>
+                <!-- Removed single terrain-name div -->
             `;
 
             boardDiv.appendChild(cardDiv);
-            card.element = cardDiv; // Store reference to the element
+            card.element = cardDiv;
             return card;
         }
 
@@ -386,36 +311,55 @@
         function findCardById(id) {
             return board.find(card => card && card.id === id);
         }
+        function findCardByGrid(gridX, gridY) {
+            return board.find(card => card && card.gridX === gridX && card.gridY === gridY);
+        }
+
+        // Helper to get direction and opposite direction between adjacent cards
+        function getDirectionInfo(card1, card2) {
+            if (!card1 || !card2) return null;
+            const dx = card2.gridX - card1.gridX;
+            const dy = card2.gridY - card1.gridY;
+
+            if (dx === 1 && dy === 0) return { direction: 'right', opposite: 'left' };
+            if (dx === -1 && dy === 0) return { direction: 'left', opposite: 'right' };
+            if (dx === 0 && dy === 1) return { direction: 'bottom', opposite: 'top' }; // Grid Y increases downwards
+            if (dx === 0 && dy === -1) return { direction: 'top', opposite: 'bottom' }; // Grid Y decreases upwards
+            return null; // Not adjacent or same card
+        }
+
+        // Helper to check if a unit can traverse a specific terrain type
+        function canUnitTraverse(unitName, terrainType) {
+            if (!unitName || !terrainType) return false;
+            const stats = unitStats[unitName];
+            return stats && stats.canTraverse.includes(terrainType);
+        }
+
 
         function handleCardClick(cardId) {
-            if (isResolvingAttack) return; // Don't allow clicks during resolution
+            if (isResolvingAttack) return;
 
             const clickedCardIndex = findCardIndexById(cardId);
-            if (clickedCardIndex === -1) return; // Card not found (e.g., already removed)
+            if (clickedCardIndex === -1) return;
             const clickedCard = board[clickedCardIndex];
 
             logMessage(""); // Clear previous message
 
             if (selectedCardIndex === null) {
-                // --- Selecting a card ---
+                // --- Selecting a unit ---
                 if (clickedCard.owner !== currentPlayer) {
-                    logMessage("Cannot select opponent's card.");
-                    return;
+                    logMessage("Cannot select opponent's card."); return;
                 }
-                // Removed HQ check - Mobile Command can be selected
                 if (!clickedCard.unit) {
-                    logMessage("Cannot select an empty space.");
-                    return;
+                    logMessage("Cannot select an empty space."); return;
                 }
 
-                // Reveal if hidden
                 if (clickedCard.hidden) {
                     clickedCard.hidden = false;
                     logMessage(`Player ${currentPlayer} revealed ${clickedCard.unit}.`);
                 }
 
                 selectedCardIndex = clickedCardIndex;
-                // Highlight selected card visually (optional)
                 board.forEach(c => c.element?.classList.remove('selected'));
                 clickedCard.element.classList.add('selected');
 
@@ -423,81 +367,67 @@
                 // --- Target selected ---
                 const attackerCard = board[selectedCardIndex];
 
-                if (clickedCardIndex === selectedCardIndex) {
-                    // Deselecting
+                if (clickedCardIndex === selectedCardIndex) { // Deselecting
                     selectedCardIndex = null;
                     attackerCard.element.classList.remove('selected');
                     logMessage("Card deselected.");
-                    updateUI(); // Update to remove selection highlight
+                    updateUI();
                     return;
                 }
 
-                if (!isAdjacent(attackerCard, clickedCard)) {
-                    logMessage("Target is not adjacent.");
+                const directionInfo = getDirectionInfo(attackerCard, clickedCard);
+                if (!directionInfo) {
+                    logMessage("Target is not adjacent."); return;
+                }
+
+                // --- Check Movement Legality ---
+                // Unit must be able to traverse the terrain on the *destination* card's edge
+                // that faces the *origin* card.
+                const entryTerrainType = clickedCard.terrain[directionInfo.opposite];
+                if (!canUnitTraverse(attackerCard.unit, entryTerrainType)) {
+                    logMessage(`${attackerCard.unit} cannot enter via ${entryTerrainType} (${directionInfo.opposite} edge of target).`);
                     return;
                 }
 
-                // Check terrain movement validity
-                const targetTerrain = clickedCard.terrain;
-                const canEnter = unitStats[attackerCard.unit]?.terrain.includes(targetTerrain);
-                const terrainBlocks = terrainStats[targetTerrain]?.blocks.includes(attackerCard.unit);
-
-                if (!canEnter || terrainBlocks) {
-                    logMessage(`${attackerCard.unit} cannot move into ${targetTerrain}.`);
-                    return;
-                }
-
-
+                // --- Process Action: Move or Attack ---
                 if (clickedCard.owner === currentPlayer) {
-                    logMessage("Cannot attack your own unit.");
-                    return;
+                    logMessage("Cannot move/attack your own unit."); return;
                 }
 
                 if (!clickedCard.unit) {
                     // --- Moving to empty adjacent tile ---
-                    logMessage(`Player ${currentPlayer} moved ${attackerCard.unit} to ${clickedCard.terrain}.`);
+                    logMessage(`Player ${currentPlayer} moved ${attackerCard.unit} via ${entryTerrainType}.`);
 
-                    // Update board state - Data moves, element stays in its grid cell
+                    // Update board state - Data moves
                     clickedCard.unit = attackerCard.unit;
                     clickedCard.owner = attackerCard.owner;
-                    clickedCard.hidden = false; // Moved unit is revealed at the target location
+                    clickedCard.hidden = false; // Moved unit is revealed
 
                     attackerCard.unit = null;
                     attackerCard.owner = null;
-                    attackerCard.hidden = true; // Previous spot becomes empty/hidden visually
+                    attackerCard.hidden = true; // Previous spot becomes empty/hidden
 
-                    // Update positions set using grid coordinates
-                    const attackerGridKey = `${attackerCard.gridX}_${attackerCard.gridY}`;
-                    const clickedGridKey = `${clickedCard.gridX}_${clickedCard.gridY}`;
-                    placedPositions.delete(attackerGridKey);
-                    // The clickedGridKey remains because the cell is still occupied (by the moved unit)
-                    // placedPositions.add(clickedGridKey); // Not needed, it was never removed
+                    // Grid positions remain, data swapped. placedPositions doesn't need update here.
 
-                    // Reset selection and switch player
                     selectedCardIndex = null;
                     currentPlayer = currentPlayer === 1 ? 2 : 1;
-                    isResolvingAttack = false; // Ensure this is false
+                    isResolvingAttack = false;
 
                 } else {
                     // --- Attacking an enemy unit ---
-                    logMessage(`Player ${currentPlayer}'s ${attackerCard.unit} attacks...`);
-                    isResolvingAttack = true; // Lock actions
+                    logMessage(`Player ${currentPlayer}'s ${attackerCard.unit} attacks ${clickedCard.unit}...`);
+                    isResolvingAttack = true;
 
-                    // Reveal defender immediately
                     if (clickedCard.hidden) {
                         clickedCard.hidden = false;
-                        logMessage(`Revealed defender: ${clickedCard.unit} on ${clickedCard.terrain}.`);
-                        updateUI(); // Show the revealed defender card
-                    } else {
-                        logMessage(`Attacking ${clickedCard.unit} on ${clickedCard.terrain}.`);
+                        logMessage(`Revealed defender: ${clickedCard.unit}.`);
+                        updateUI(); // Show revealed defender
                     }
 
-
-                    // Delay the resolution so player can see the revealed card
                     setTimeout(() => {
                         resolveAttack(selectedCardIndex, clickedCardIndex);
-                        isResolvingAttack = false; // Unlock actions after resolution
-                    }, 1500); // 1.5 second delay
+                        isResolvingAttack = false; // Unlock after resolution
+                    }, 1500);
                 }
                 // Update UI after move or before attack resolution starts
                 updateUI();
@@ -507,215 +437,190 @@
         }
 
         function resolveAttack(attackerIndex, defenderIndex) {
-            const attacker = board[attackerIndex];
-            const defender = board[defenderIndex];
+            const attackerCard = board[attackerIndex];
+            const defenderCard = board[defenderIndex];
 
-            // Ensure both units exist before proceeding
-            if (!attacker || !attacker.unit || !defender || !defender.unit) {
-                logMessage("Attack cancelled - one unit is missing.");
+            if (!attackerCard || !attackerCard.unit || !defenderCard || !defenderCard.unit) {
+                logMessage("Attack cancelled - unit missing.");
                 isResolvingAttack = false;
-                selectedCardIndex = null; // Reset selection
+                selectedCardIndex = null;
                 updateUI();
                 return;
             }
 
+            const attackerStats = unitStats[attackerCard.unit];
+            const defenderStats = unitStats[defenderCard.unit];
 
-            const attackerStats = unitStats[attacker.unit];
-            const defenderStats = unitStats[defender.unit];
-            const terrainBonus = terrainStats[defender.terrain]?.defenseBonus || 0;
+            // Determine defense bonus based on the defender's edge facing the attacker
+            const directionInfo = getDirectionInfo(attackerCard, defenderCard);
+            const defenseEdgeTerrain = defenderCard.terrain[directionInfo.opposite];
+            const terrainBonus = terrainRules[defenseEdgeTerrain]?.defenseBonus || 0;
 
             const attackValue = attackerStats.attack;
             const defenseValue = defenderStats.defense + terrainBonus;
 
-            logMessage(`${attacker.unit} (A:${attackValue}) vs ${defender.unit} (D:${defenderStats.defense} + ${terrainBonus} = ${defenseValue})`);
+            logMessage(`${attackerCard.unit} (A:${attackValue}) vs ${defenderCard.unit} (D:${defenderStats.defense} + ${terrainBonus} Bonus = ${defenseValue}) attacking via ${defenseEdgeTerrain}`);
 
             let winner, loser;
+            let attackerWins = attackValue >= defenseValue; // Attacker wins ties
 
-            if (attackValue > defenseValue) { // Attacker wins ONLY if strictly greater
-                winner = attacker;
-                loser = defender;
-                logMessage(`Attacker wins! ${attacker.unit} defeats ${defender.unit}.`);
+            if (attackerWins) {
+                winner = attackerCard;
+                loser = defenderCard;
+                logMessage(`Attacker wins! ${winner.unit} defeats ${loser.unit}.`);
 
-                // Add loser to defeated list
                 defeatedUnits.push({ unit: loser.unit, terrain: loser.terrain, owner: loser.owner });
 
-                // Update board state: Attacker data moves to defender's card object
-                defender.unit = attacker.unit;
-                defender.owner = attacker.owner;
-                defender.hidden = false; // Ensure winner is revealed in the defender's cell
+                // Update board: Attacker data moves to defender's card object
+                defenderCard.unit = attackerCard.unit;
+                defenderCard.owner = attackerCard.owner;
+                defenderCard.hidden = false; // Winner is revealed
 
                 // Clear attacker's original card object data
-                attacker.unit = null;
-                attacker.owner = null;
-                attacker.hidden = true; // Visually empty
+                attackerCard.unit = null;
+                attackerCard.owner = null;
+                attackerCard.hidden = true; // Visually empty
 
-                // Update positions set using grid coordinates
-                const attackerGridKey = `${attacker.gridX}_${attacker.gridY}`;
-                placedPositions.delete(attackerGridKey);
-                // Defender's grid key remains as the cell is occupied by the winner
+            } else { // Defender wins
+                winner = defenderCard;
+                loser = attackerCard;
+                logMessage(`Defender wins! ${winner.unit} defeats ${loser.unit}.`);
 
-            } else { // Defender wins if attack <= defense (Defender wins ties)
-                winner = defender;
-                loser = attacker;
-                logMessage(`Defender wins! ${defender.unit} defeats ${attacker.unit}.`);
-
-                // Add loser to defeated list
                 defeatedUnits.push({ unit: loser.unit, terrain: loser.terrain, owner: loser.owner });
 
-                // Update board state: Defender holds position, clear attacker's card object data
-                attacker.unit = null;
-                attacker.owner = null;
-                attacker.hidden = true; // Visually empty
+                // Update board: Defender holds, clear attacker's card object data
+                attackerCard.unit = null;
+                attackerCard.owner = null;
+                attackerCard.hidden = true; // Visually empty
 
-                // Update positions set using grid coordinates
-                const attackerGridKey = `${attacker.gridX}_${attacker.gridY}`;
-                placedPositions.delete(attackerGridKey);
-                // Defender remains revealed and stays in place (defender's grid key remains)
-                defender.hidden = false;
+                // Defender remains revealed
+                defenderCard.hidden = false;
             }
 
-
             // Check for win conditions
-            const commandUnit = 'Mobile Command'; // Define the command unit type
+            const commandUnit = 'Mobile Command';
             const remainingUnitsP1 = board.filter(c => c && c.owner === 1 && c.unit && c.unit !== commandUnit).length;
             const remainingUnitsP2 = board.filter(c => c && c.owner === 2 && c.unit && c.unit !== commandUnit).length;
             const commandP1 = board.find(c => c && c.unit === commandUnit && c.owner === 1);
             const commandP2 = board.find(c => c && c.unit === commandUnit && c.owner === 2);
 
             let gameOver = false;
-            if (!commandP2) { // Player 1 captured Player 2's Mobile Command
-                logMessage(`Player 1 wins by capturing the Mobile Command!`);
-                gameOver = true;
-            } else if (!commandP1) { // Player 2 captured Player 1's Mobile Command
-                logMessage(`Player 2 wins by capturing the Mobile Command!`);
-                gameOver = true;
-            } else if (remainingUnitsP2 === 0) {
-                logMessage(`Player 1 wins by eliminating all other movable units!`);
-                gameOver = true;
-            } else if (remainingUnitsP1 === 0) {
-                logMessage(`Player 2 wins by eliminating all other movable units!`);
-                gameOver = true;
+            if (!commandP2) {
+                logMessage(`Player 1 wins by capturing the Mobile Command!`); gameOver = true;
+            } else if (!commandP1) {
+                logMessage(`Player 2 wins by capturing the Mobile Command!`); gameOver = true;
+            } else if (remainingUnitsP2 === 0 && commandP2) { // Check command still exists
+                logMessage(`Player 1 wins by eliminating all other movable units!`); gameOver = true;
+            } else if (remainingUnitsP1 === 0 && commandP1) { // Check command still exists
+                logMessage(`Player 2 wins by eliminating all other movable units!`); gameOver = true;
             }
 
-
-            // Reset selection and switch player if game not over
             selectedCardIndex = null;
             if (!gameOver) {
                 currentPlayer = currentPlayer === 1 ? 2 : 1;
             } else {
-                // Disable further interaction or show overlay
                 isResolvingAttack = true; // Keep locked if game over
             }
 
-            updateUI(); // Update after resolution
+            updateUI();
         }
 
-
-        // Updated isAdjacent for CSS Grid
+        // isAdjacent check remains the same (based on grid)
         function isAdjacent(card1, card2) {
-            // Check for null or undefined cards
             if (!card1 || !card2) return false;
-            // Check grid adjacency (Manhattan distance === 1)
             const dx = Math.abs(card1.gridX - card2.gridX);
             const dy = Math.abs(card1.gridY - card2.gridY);
             return (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
         }
 
         function updateUI() {
-            // Remove player turn classes from body - no longer needed for CSS hover/cursor
-            document.body.classList.remove('player1-turn', 'player2-turn');
-            // We still need to know the current player for logic below
-
             const attackerCard = selectedCardIndex !== null ? board[selectedCardIndex] : null;
 
-            // Update cards on board
             board.forEach((card, i) => {
-                if (!card || !card.element) return; // Skip if card was removed or element missing
+                if (!card || !card.element) return; // Skip removed/missing
 
                 const div = card.element;
-                // Reset base classes and remove selectable states from previous turn/state
-                div.className = `card player${card.owner || 0} terrain-${card.terrain}`;
-                div.classList.remove('selectable-initial', 'selectable-move', 'selectable-attack', 'not-selectable', 'selected');
+                // Reset base classes and remove selectable states
+                div.className = `card player${card.owner || 0}`; // Base classes first
+                div.classList.remove('selectable-initial', 'selectable-move', 'selectable-attack', 'not-selectable', 'selected', 'hidden'); // Clear states
 
                 if (card.hidden) div.classList.add('hidden');
-                if (i === selectedCardIndex) div.classList.add('selected'); // Highlight selected card
+                if (i === selectedCardIndex) div.classList.add('selected');
 
                 // --- Determine Selectable State ---
-                if (selectedCardIndex === null) {
-                    // State: Selecting initial unit
+                if (selectedCardIndex === null) { // Selecting initial unit
                     if (card.owner === currentPlayer && card.unit) {
                         div.classList.add('selectable-initial');
                     } else {
-                        // Add not-selectable to others for clarity, though default cursor works
-                         div.classList.add('not-selectable');
-                    }
-                } else {
-                    // State: Unit selected, selecting target
-                    if (i === selectedCardIndex) {
-                        // The selected card itself is not a valid target
                         div.classList.add('not-selectable');
-                    } else if (isAdjacent(attackerCard, card)) {
-                        // Check terrain validity for the *attacker* moving into the *target* terrain
-                        const targetTerrain = card.terrain;
-                        const canEnter = unitStats[attackerCard.unit]?.terrain.includes(targetTerrain);
-                        const terrainBlocks = terrainStats[targetTerrain]?.blocks.includes(attackerCard.unit);
-
-                        if (canEnter && !terrainBlocks) {
-                            if (card.unit === null) { // Empty, valid square
-                                div.classList.add('selectable-move');
-                            } else if (card.owner !== currentPlayer) { // Enemy unit
-                                div.classList.add('selectable-attack');
-                            } else { // Own unit
+                    }
+                } else { // Unit selected, selecting target
+                    if (i === selectedCardIndex) {
+                        div.classList.add('not-selectable'); // Can't target self
+                    } else {
+                        const directionInfo = getDirectionInfo(attackerCard, card);
+                        if (directionInfo) { // Is adjacent
+                            const entryTerrainType = card.terrain[directionInfo.opposite];
+                            if (canUnitTraverse(attackerCard.unit, entryTerrainType)) {
+                                if (card.unit === null) { // Empty, valid square
+                                    div.classList.add('selectable-move');
+                                } else if (card.owner !== currentPlayer) { // Enemy unit
+                                    div.classList.add('selectable-attack');
+                                } else { // Own unit
+                                    div.classList.add('not-selectable');
+                                }
+                            } else { // Invalid terrain edge
                                 div.classList.add('not-selectable');
                             }
-                        } else { // Invalid terrain
+                        } else { // Not adjacent
                             div.classList.add('not-selectable');
                         }
-                    } else { // Not adjacent
-                        div.classList.add('not-selectable');
                     }
                 }
                 // --- End Selectable State ---
 
-
+                // Update Content (Unit Name, Stats, Terrain Edges)
                 const unitNameDiv = div.querySelector('.unit-name');
                 const statsDiv = div.querySelector('.stats');
                 const attackSpan = statsDiv.querySelector('.attack');
                 const defenseSpan = statsDiv.querySelector('.defense');
-                const terrainNameDiv = div.querySelector('.terrain-name');
+                const terrainEdgesDiv = div.querySelector('.terrain-edges');
+                const edgeSpans = {
+                    top: terrainEdgesDiv.querySelector('.edge-top'),
+                    right: terrainEdgesDiv.querySelector('.edge-right'),
+                    bottom: terrainEdgesDiv.querySelector('.edge-bottom'),
+                    left: terrainEdgesDiv.querySelector('.edge-left'),
+                };
 
-                terrainNameDiv.textContent = card.terrain || 'Unknown';
+                // Update terrain emojis (always visible unless card.hidden)
+                edgeSpans.top.textContent = TERRAIN_EMOJIS[card.terrain.top];
+                edgeSpans.right.textContent = TERRAIN_EMOJIS[card.terrain.right];
+                edgeSpans.bottom.textContent = TERRAIN_EMOJIS[card.terrain.bottom];
+                edgeSpans.left.textContent = TERRAIN_EMOJIS[card.terrain.left];
 
                 if (card.unit && !card.hidden) {
                     unitNameDiv.textContent = card.unit;
                     const stats = unitStats[card.unit];
-                    if (stats) {
-                        attackSpan.textContent = `A: ${stats.attack}`;
-                        defenseSpan.textContent = `D: ${stats.defense}`;
-                        statsDiv.style.visibility = 'visible';
-                    } else {
-                        attackSpan.textContent = `A: ?`;
-                        defenseSpan.textContent = `D: ?`;
-                        statsDiv.style.visibility = 'hidden'; // Hide stats if unknown unit somehow
-                    }
+                    attackSpan.textContent = `A: ${stats.attack}`;
+                    defenseSpan.textContent = `D: ${stats.defense}`;
                     unitNameDiv.style.visibility = 'visible';
+                    statsDiv.style.visibility = 'visible';
+                    terrainEdgesDiv.style.visibility = 'visible'; // Ensure edges are visible
                 } else if (card.unit && card.hidden) {
-                    // Hidden card with a unit (e.g. after placement)
-                    unitNameDiv.textContent = '?'; // Show placeholder
+                    unitNameDiv.textContent = '?';
                     attackSpan.textContent = `A: ?`;
                     defenseSpan.textContent = `D: ?`;
-                    unitNameDiv.style.visibility = 'hidden'; // Hide name
-                    statsDiv.style.visibility = 'hidden'; // Hide stats
-                }
-                else {
-                    // Empty spot (unit is null)
+                    unitNameDiv.style.visibility = 'hidden';
+                    statsDiv.style.visibility = 'hidden';
+                    terrainEdgesDiv.style.visibility = 'visible'; // KEEP edges visible
+                } else { // Empty spot
                     unitNameDiv.textContent = '';
                     attackSpan.textContent = `A: -`;
                     defenseSpan.textContent = `D: -`;
                     unitNameDiv.style.visibility = 'hidden';
                     statsDiv.style.visibility = 'hidden';
-                    div.classList.add('hidden'); // Make empty spots look like hidden/fog
-                    // div.style.cursor = 'default'; // Already handled by base .card style and turn-specific CSS
+                    terrainEdgesDiv.style.visibility = 'visible'; // Show terrain even if empty
+                    div.classList.add('hidden'); // Make empty spots look like fog
                 }
             });
 
@@ -729,121 +634,110 @@
                 <span class="player2-text">Player 2 Units: ${p2Units}</span>
              `;
 
-
             // Update Defeated Units Area
             const defeatedDiv = document.getElementById('defeated-units');
             defeatedDiv.innerHTML = '<h4>Defeated Units</h4>'; // Clear previous
             defeatedUnits.forEach(defeated => {
                 const defeatedCardDiv = document.createElement('div');
-                defeatedCardDiv.className = `defeated-card player${defeated.owner} terrain-${defeated.terrain}`;
+                defeatedCardDiv.className = `defeated-card player${defeated.owner}`;
                 const stats = unitStats[defeated.unit];
                 const attack = stats ? stats.attack : '?';
                 const defense = stats ? stats.defense : '?';
                 defeatedCardDiv.innerHTML = `
+                    <div class="terrain-edges">
+                       <span class="terrain-edge edge-top">${TERRAIN_EMOJIS[defeated.terrain.top]}</span>
+                       <span class="terrain-edge edge-right">${TERRAIN_EMOJIS[defeated.terrain.right]}</span>
+                       <span class="terrain-edge edge-bottom">${TERRAIN_EMOJIS[defeated.terrain.bottom]}</span>
+                       <span class="terrain-edge edge-left">${TERRAIN_EMOJIS[defeated.terrain.left]}</span>
+                    </div>
                     <div class="unit-name">${defeated.unit}</div>
                     <div class="stats">
                        <span class="attack">A:${attack}</span> <span class="defense">D:${defense}</span>
                     </div>
-                    <div class="terrain-name">${defeated.terrain}</div>`;
+                    <!-- No single terrain name -->`;
                 defeatedDiv.appendChild(defeatedCardDiv);
             });
         }
 
         function logMessage(msg) {
             document.getElementById('message-log').textContent = msg;
-            console.log(msg); // Also log to console for debugging
+            console.log(msg);
         }
 
-
         function resetGame() {
-            logMessage("Setting up new game...");
+            logMessage("Setting up new game with 4-sided terrain...");
             board = [];
             placedPositions.clear();
             selectedCardIndex = null;
             isResolvingAttack = false;
             defeatedUnits = [];
             nextCardId = 0;
-            document.getElementById('board').innerHTML = ''; // Clear board visuals
-            document.getElementById('defeated-units').innerHTML = '<h4>Defeated Units</h4>'; // Clear defeated area
+            document.getElementById('board').innerHTML = '';
+            document.getElementById('defeated-units').innerHTML = '<h4>Defeated Units</h4>';
 
-            // Create unit/terrain pairs for each player
+            // Prepare unit lists and terrain card indices (0-7) for each player
             playerUnits = { 1: [], 2: [] };
             const unitsP1 = shuffle(getUnitList());
-            const terrainP1 = shuffle(getTerrainList());
+            const terrainIndicesP1 = shuffle([...Array(8).keys()]); // Shuffle indices [0, 1, ..., 7]
             const unitsP2 = shuffle(getUnitList());
-            const terrainP2 = shuffle(getTerrainList());
+            const terrainIndicesP2 = shuffle([...Array(8).keys()]); // Shuffle indices [0, 1, ..., 7]
 
             for (let i = 0; i < 8; i++) {
-                // Basic validation: ensure unit can exist on terrain (more robust check needed for setup rules)
-                // For now, just pair them up. Real setup needs player interaction.
-                playerUnits[1].push({ unit: unitsP1[i], terrain: terrainP1[i] });
-                playerUnits[2].push({ unit: unitsP2[i], terrain: terrainP2[i] });
+                playerUnits[1].push({ unit: unitsP1[i], terrainCardIndex: terrainIndicesP1[i] });
+                playerUnits[2].push({ unit: unitsP2[i], terrainCardIndex: terrainIndicesP2[i] });
             }
 
             // --- Automatic Placement (Simplified using Grid) ---
-            // Place first card for Player 1 at the starting grid coordinate
             const startGridX = START_GRID_COORD;
             const startGridY = START_GRID_COORD;
             const firstPairP1 = playerUnits[1].pop();
-            placeCard(startGridX, startGridY, 1, firstPairP1.unit, firstPairP1.terrain);
+            const firstTerrainDataP1 = fixedTerrainCards[firstPairP1.terrainCardIndex];
+            placeCard(startGridX, startGridY, 1, firstPairP1.unit, firstTerrainDataP1);
 
             currentPlayer = 2; // Player 2 places next
 
-            // Grid directions (dx, dy)
-            const gridDirections = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+            const gridDirections = [[1, 0], [-1, 0], [0, 1], [0, -1]]; // Right, Left, Down, Up
 
-            // Alternate placing remaining cards
             while (playerUnits[1].length > 0 || playerUnits[2].length > 0) {
-                let availablePositions = new Map(); // Use Map to avoid duplicate positions "gridX_gridY" -> {gridX, gridY}
+                let availablePositions = new Map();
 
-                // Find adjacent empty grid spots for all currently placed cards
                 board.forEach(card => {
-                    if (!card || !card.unit) return; // Skip empty spots or cards removed from board array
+                    if (!card || !card.unit) return;
                     const { gridX, gridY } = card;
                     gridDirections.forEach(([dx, dy]) => {
                         const nx = gridX + dx;
                         const ny = gridY + dy;
                         const gridKey = `${nx}_${ny}`;
                         if (!placedPositions.has(gridKey)) {
-                            // Add validation if needed (e.g., grid boundaries, though grid expands)
                             availablePositions.set(gridKey, { gridX: nx, gridY: ny });
                         }
                     });
                 });
 
                 if (availablePositions.size === 0) {
-                    logMessage("Error: No available positions to place card. Setup failed.");
-                    // This might happen if the board gets fully enclosed, though unlikely with grid
-                    break; // Prevent infinite loop
+                    logMessage("Error: No available positions. Setup failed."); break;
                 }
 
-                // Pick a random available position
                 const posArray = Array.from(availablePositions.values());
                 const pos = posArray[Math.floor(Math.random() * posArray.length)];
 
-                // Place card for the current player
                 if (playerUnits[currentPlayer].length > 0) {
                     const pair = playerUnits[currentPlayer].pop();
-
-                    // TODO: Add validation here based on game rules (e.g., Tank cannot be placed on Mountain)
-                    // For now, just place it.
-                    placeCard(pos.gridX, pos.gridY, currentPlayer, pair.unit, pair.terrain);
-                    // No need for lastPlaced array anymore with grid
+                    const terrainData = fixedTerrainCards[pair.terrainCardIndex];
+                    // Basic validation during placement isn't strictly needed now,
+                    // as units are hidden and terrain doesn't block placement itself.
+                    placeCard(pos.gridX, pos.gridY, currentPlayer, pair.unit, terrainData);
                 }
 
-                // Switch player for next placement
                 currentPlayer = currentPlayer === 1 ? 2 : 1;
             }
 
-            // Start game with Player 1
-            currentPlayer = 1;
+            currentPlayer = 1; // Start game with Player 1
             logMessage("Game ready. Player 1's turn.");
             updateUI();
         }
 
-        // Initial setup on load
         document.addEventListener("DOMContentLoaded", resetGame);
     </script>
 </body>
-
 </html>
