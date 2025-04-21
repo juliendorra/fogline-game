@@ -17,30 +17,21 @@
 
         #game-area {
             position: relative;
-            width: 90vw;
-            /* Adjust width */
-            max-width: 1000px;
-            /* Max width */
-            height: 70vh;
-            /* Adjust height */
-            max-height: 700px;
-            /* Max height */
-            margin: 20px auto;
-            border: 1px solid #ccc;
-            overflow: auto;
-            /* Add scroll if content overflows */
+            width: 100vw;
+            margin-bottom: 20px auto;
+            border: 0px solid #ccc;
             background-color: #e8e8e8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         #board {
-            position: relative;
-            /* Let content define size, or set large fixed size if needed */
-            width: 2000px;
-            /* Example large size */
-            height: 2000px;
-            /* Example large size */
-            transform-origin: top left;
-            /* For potential scaling */
+            display: inline-grid;
+            /* Use grid for layout, inline allows centering */
+            gap: 5px;
+            padding: 25px;
+
         }
 
         .card {
@@ -50,7 +41,7 @@
             /* Portrait height */
             border: 1px solid #333;
             border-radius: 5px;
-            position: absolute;
+            /* position: absolute; Removed */
             cursor: pointer;
             background-color: #fff;
             box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
@@ -157,6 +148,7 @@
         #info,
         #controls {
             margin-top: 15px;
+            margin-bottom: 15px;
             text-align: center;
             width: 100%;
         }
@@ -284,11 +276,10 @@
         let defeatedUnits = []; // Stores { unit, terrain, owner } of defeated units
         let nextCardId = 0; // Unique ID for each card
 
-        const CARD_WIDTH = 75;
-        const CARD_HEIGHT = 105;
-        const GAP = 5;
-        const STEP_X = CARD_WIDTH + GAP; // 80
-        const STEP_Y = CARD_HEIGHT + GAP; // 110
+        // Grid constants
+        const START_GRID_COORD = 10; // Start placing cards around grid cell 10,10
+
+        // Removed pixel constants: CARD_WIDTH, CARD_HEIGHT, GAP, STEP_X, STEP_Y
 
         // Unit Stats based on Readme (Updated: HQ -> Mobile Command)
         const unitStats = {
@@ -337,17 +328,22 @@
             return array;
         }
 
-        function placeCard(x, y, owner, unit, terrain) {
+        // Updated placeCard for CSS Grid
+        function placeCard(gridX, gridY, owner, unit, terrain) {
             const cardId = nextCardId++;
-            const card = { id: cardId, unit, terrain, hidden: true, owner, x, y, element: null };
+            // Store gridX, gridY instead of pixel x, y
+            const card = { id: cardId, unit, terrain, hidden: true, owner, gridX, gridY, element: null };
             board.push(card);
-            placedPositions.add(`${x}_${y}`);
+            const gridKey = `${gridX}_${gridY}`;
+            placedPositions.add(gridKey);
 
             const boardDiv = document.getElementById('board');
             const cardDiv = document.createElement('div');
             cardDiv.className = `card hidden player${owner} terrain-${terrain}`;
-            cardDiv.style.left = `${x}px`;
-            cardDiv.style.top = `${y}px`;
+            // Set grid position using styles
+            cardDiv.style.gridColumn = gridX;
+            cardDiv.style.gridRow = gridY;
+            // Removed cardDiv.style.left and cardDiv.style.top
             cardDiv.dataset.id = cardId; // Use unique ID
             cardDiv.onclick = () => handleCardClick(cardId);
 
@@ -443,18 +439,21 @@
                     // --- Moving to empty adjacent tile ---
                     logMessage(`Player ${currentPlayer} moved ${attackerCard.unit} to ${clickedCard.terrain}.`);
 
-                    // Update board state
+                    // Update board state - Data moves, element stays in its grid cell
                     clickedCard.unit = attackerCard.unit;
                     clickedCard.owner = attackerCard.owner;
-                    clickedCard.hidden = false; // Moved unit is revealed
+                    clickedCard.hidden = false; // Moved unit is revealed at the target location
 
                     attackerCard.unit = null;
                     attackerCard.owner = null;
                     attackerCard.hidden = true; // Previous spot becomes empty/hidden visually
 
-                    // Update positions set
-                    placedPositions.delete(`${attackerCard.x}_${attackerCard.y}`);
-                    placedPositions.add(`${clickedCard.x}_${clickedCard.y}`);
+                    // Update positions set using grid coordinates
+                    const attackerGridKey = `${attackerCard.gridX}_${attackerCard.gridY}`;
+                    const clickedGridKey = `${clickedCard.gridX}_${clickedCard.gridY}`;
+                    placedPositions.delete(attackerGridKey);
+                    // The clickedGridKey remains because the cell is still occupied (by the moved unit)
+                    // placedPositions.add(clickedGridKey); // Not needed, it was never removed
 
                     // Reset selection and switch player
                     selectedCardIndex = null;
@@ -522,19 +521,20 @@
                 // Add loser to defeated list
                 defeatedUnits.push({ unit: loser.unit, terrain: loser.terrain, owner: loser.owner });
 
-                // Update board state: Attacker moves into defender's spot
+                // Update board state: Attacker data moves to defender's card object
                 defender.unit = attacker.unit;
                 defender.owner = attacker.owner;
-                defender.hidden = false; // Ensure winner is revealed
+                defender.hidden = false; // Ensure winner is revealed in the defender's cell
 
-                // Clear attacker's original spot
+                // Clear attacker's original card object data
                 attacker.unit = null;
                 attacker.owner = null;
                 attacker.hidden = true; // Visually empty
 
-                // Update positions set
-                placedPositions.delete(`${attacker.x}_${attacker.y}`);
-                // Note: defender's position key remains in placedPositions as it's now occupied by the winner
+                // Update positions set using grid coordinates
+                const attackerGridKey = `${attacker.gridX}_${attacker.gridY}`;
+                placedPositions.delete(attackerGridKey);
+                // Defender's grid key remains as the cell is occupied by the winner
 
             } else { // Defender wins if attack <= defense (Defender wins ties)
                 winner = defender;
@@ -544,14 +544,15 @@
                 // Add loser to defeated list
                 defeatedUnits.push({ unit: loser.unit, terrain: loser.terrain, owner: loser.owner });
 
-                // Update board state: Defender holds position, clear attacker's spot
+                // Update board state: Defender holds position, clear attacker's card object data
                 attacker.unit = null;
                 attacker.owner = null;
                 attacker.hidden = true; // Visually empty
 
-                // Update positions set
-                placedPositions.delete(`${attacker.x}_${attacker.y}`);
-                // Defender remains revealed and stays in place
+                // Update positions set using grid coordinates
+                const attackerGridKey = `${attacker.gridX}_${attacker.gridY}`;
+                placedPositions.delete(attackerGridKey);
+                // Defender remains revealed and stays in place (defender's grid key remains)
                 defender.hidden = false;
             }
 
@@ -565,17 +566,17 @@
 
             let gameOver = false;
             if (!commandP2) { // Player 1 captured Player 2's Mobile Command
-                 logMessage(`Player 1 wins by capturing the Mobile Command!`);
-                 gameOver = true;
+                logMessage(`Player 1 wins by capturing the Mobile Command!`);
+                gameOver = true;
             } else if (!commandP1) { // Player 2 captured Player 1's Mobile Command
-                 logMessage(`Player 2 wins by capturing the Mobile Command!`);
-                 gameOver = true;
+                logMessage(`Player 2 wins by capturing the Mobile Command!`);
+                gameOver = true;
             } else if (remainingUnitsP2 === 0) {
-                 logMessage(`Player 1 wins by eliminating all other movable units!`);
-                 gameOver = true;
+                logMessage(`Player 1 wins by eliminating all other movable units!`);
+                gameOver = true;
             } else if (remainingUnitsP1 === 0) {
-                 logMessage(`Player 2 wins by eliminating all other movable units!`);
-                 gameOver = true;
+                logMessage(`Player 2 wins by eliminating all other movable units!`);
+                gameOver = true;
             }
 
 
@@ -592,13 +593,14 @@
         }
 
 
+        // Updated isAdjacent for CSS Grid
         function isAdjacent(card1, card2) {
             // Check for null or undefined cards
             if (!card1 || !card2) return false;
-            // Check horizontal adjacency
-            const dx = Math.abs(card1.x - card2.x);
-            const dy = Math.abs(card1.y - card2.y);
-            return (dx === STEP_X && dy === 0) || (dx === 0 && dy === STEP_Y);
+            // Check grid adjacency (Manhattan distance === 1)
+            const dx = Math.abs(card1.gridX - card2.gridX);
+            const dy = Math.abs(card1.gridY - card2.gridY);
+            return (dx === 1 && dy === 0) || (dx === 0 && dy === 1);
         }
 
         function updateUI() {
@@ -713,42 +715,40 @@
                 playerUnits[2].push({ unit: unitsP2[i], terrain: terrainP2[i] });
             }
 
-            // --- Automatic Placement (Simplified) ---
-            // Place first card for Player 1 near center (adjust coords as needed)
-            const startX = 1000; // Center of large board
-            const startY = 1000;
+            // --- Automatic Placement (Simplified using Grid) ---
+            // Place first card for Player 1 at the starting grid coordinate
+            const startGridX = START_GRID_COORD;
+            const startGridY = START_GRID_COORD;
             const firstPairP1 = playerUnits[1].pop();
-            placeCard(startX, startY, 1, firstPairP1.unit, firstPairP1.terrain);
-            let lastPlaced = [{ x: startX, y: startY }]; // Keep track of coords of placed cards
+            placeCard(startGridX, startGridY, 1, firstPairP1.unit, firstPairP1.terrain);
 
             currentPlayer = 2; // Player 2 places next
 
-            const directions = [[STEP_X, 0], [-STEP_X, 0], [0, STEP_Y], [0, -STEP_Y]];
+            // Grid directions (dx, dy)
+            const gridDirections = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
             // Alternate placing remaining cards
             while (playerUnits[1].length > 0 || playerUnits[2].length > 0) {
-                let availablePositions = new Map(); // Use Map to avoid duplicate positions "x_y" -> {x, y}
+                let availablePositions = new Map(); // Use Map to avoid duplicate positions "gridX_gridY" -> {gridX, gridY}
 
-                // Find adjacent empty spots for all currently placed cards
+                // Find adjacent empty grid spots for all currently placed cards
                 board.forEach(card => {
-                    if (!card || !card.unit) return; // Skip empty spots
-                    const { x, y } = card;
-                    directions.forEach(([dx, dy]) => {
-                        const nx = x + dx;
-                        const ny = y + dy;
-                        const posKey = `${nx}_${ny}`;
-                        if (!placedPositions.has(posKey)) {
-                            // Basic boundary check (optional, depends on board size goal)
-                            // if (nx >= 0 && ny >= 0 && nx < 2000 && ny < 2000) {
-                            availablePositions.set(posKey, { x: nx, y: ny });
-                            // }
+                    if (!card || !card.unit) return; // Skip empty spots or cards removed from board array
+                    const { gridX, gridY } = card;
+                    gridDirections.forEach(([dx, dy]) => {
+                        const nx = gridX + dx;
+                        const ny = gridY + dy;
+                        const gridKey = `${nx}_${ny}`;
+                        if (!placedPositions.has(gridKey)) {
+                            // Add validation if needed (e.g., grid boundaries, though grid expands)
+                            availablePositions.set(gridKey, { gridX: nx, gridY: ny });
                         }
                     });
                 });
 
-
                 if (availablePositions.size === 0) {
                     logMessage("Error: No available positions to place card. Setup failed.");
+                    // This might happen if the board gets fully enclosed, though unlikely with grid
                     break; // Prevent infinite loop
                 }
 
@@ -762,8 +762,8 @@
 
                     // TODO: Add validation here based on game rules (e.g., Tank cannot be placed on Mountain)
                     // For now, just place it.
-                    placeCard(pos.x, pos.y, currentPlayer, pair.unit, pair.terrain);
-                    lastPlaced.push({ x: pos.x, y: pos.y });
+                    placeCard(pos.gridX, pos.gridY, currentPlayer, pair.unit, pair.terrain);
+                    // No need for lastPlaced array anymore with grid
                 }
 
                 // Switch player for next placement
