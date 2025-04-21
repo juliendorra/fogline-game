@@ -7,7 +7,7 @@
 
 ## 🎯 Objective
 
-Capture your opponent’s **Headquarters (HQ)** or eliminate all their movable units. Outsmart your opponent with timing, terrain, and tactical reveals.
+Capture your opponent’s **Mobile Command** or eliminate all their other movable units. Outsmart your opponent with timing, terrain, and tactical reveals.
 
 ---
 
@@ -73,20 +73,20 @@ Players alternate turns. On your turn:
 
 You win by either:
 
-✅ Capturing the **enemy HQ**, or  
-✅ Eliminating all **movable enemy units**
+✅ Capturing the **enemy Mobile Command**, or
+✅ Eliminating all other **movable enemy units**
 
 ---
 
 ## 📋 Units Summary
 
-| Unit      | Qty | Attack | Defense | Can Enter                  |
-|-----------|-----|--------|---------|-----------------------------|
-| HQ        | 1   | 0      | 1       | Immobile                   |
-| Tank      | 2   | 4      | 4       | Plains only                |
-| Infantry  | 3   | 3      | 3       | All terrain                |
-| Artillery | 1   | 5      | 1       | Plains only                |
-| Scout     | 1   | 2      | 2       | All terrain                |
+| Unit            | Qty | Attack | Defense | Can Enter                  |
+|-----------------|-----|--------|---------|-----------------------------|
+| Mobile Command  | 1   | 1      | 2       | Plains only                |
+| Tank            | 2   | 4      | 4       | Plains only                |
+| Infantry        | 3   | 3      | 3       | All terrain                |
+| Artillery       | 1   | 5      | 1       | Plains only                |
+| Special Ops     | 1   | 3      | 1       | All terrain                |
 
 ---
 
@@ -96,7 +96,7 @@ You win by either:
 |-----------|-----|----------------------|----------------|
 | Plains    | 4   | None                 | None           |
 | Forest    | 2   | Tanks, Artillery     | +1 Defense     |
-| Mountain  | 2   | Only Infantry/Scout  | (Optional +1)  |
+| Mountain  | 2   | Tanks, Artillery     | (Optional +1)  |
 
 ---
 

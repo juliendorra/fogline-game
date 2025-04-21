@@ -290,20 +290,20 @@
         const STEP_X = CARD_WIDTH + GAP; // 80
         const STEP_Y = CARD_HEIGHT + GAP; // 110
 
-        // Unit Stats based on Readme
+        // Unit Stats based on Readme (Updated: HQ -> Mobile Command)
         const unitStats = {
-            'HQ': { attack: 0, defense: 1, quantity: 1, terrain: ['Plains', 'Forest', 'Mountain'] }, // HQ can be on any terrain initially
+            'Mobile Command': { attack: 1, defense: 2, quantity: 1, terrain: ['Plains'] }, // Can move on Plains
             'Tank': { attack: 4, defense: 4, quantity: 2, terrain: ['Plains'] },
             'Infantry': { attack: 3, defense: 3, quantity: 3, terrain: ['Plains', 'Forest', 'Mountain'] },
             'Artillery': { attack: 5, defense: 1, quantity: 1, terrain: ['Plains'] },
-            'Scout': { attack: 2, defense: 2, quantity: 1, terrain: ['Plains', 'Forest', 'Mountain'] }
+            'Special Ops': { attack: 3, defense: 1, quantity: 1, terrain: ['Plains', 'Forest', 'Mountain'] } // Replaced Scout
         };
 
         // Terrain Stats based on Readme
         const terrainStats = {
             'Plains': { quantity: 4, defenseBonus: 0, blocks: [] },
             'Forest': { quantity: 2, defenseBonus: 1, blocks: ['Tank', 'Artillery'] },
-            'Mountain': { quantity: 2, defenseBonus: 0, blocks: ['Tank', 'Artillery'] } // Readme says only Inf/Scout can enter, effectively blocking others. Optional +1 def ignored for now.
+            'Mountain': { quantity: 2, defenseBonus: 0, blocks: ['Tank', 'Artillery'] } // Only Infantry/Special Ops can enter. Optional +1 def ignored for now.
         };
         const allUnitTypes = Object.keys(unitStats);
         const allTerrainTypes = Object.keys(terrainStats);
@@ -388,10 +388,7 @@
                     logMessage("Cannot select opponent's card.");
                     return;
                 }
-                if (clickedCard.unit === 'HQ') {
-                    logMessage("HQ cannot move or attack.");
-                    return;
-                }
+                // Removed HQ check - Mobile Command can be selected
                 if (!clickedCard.unit) {
                     logMessage("Cannot select an empty space.");
                     return;
@@ -515,28 +512,17 @@
 
             logMessage(`${attacker.unit} (A:${attackValue}) vs ${defender.unit} (D:${defenderStats.defense} + ${terrainBonus} = ${defenseValue})`);
 
-            let winner, loser, winnerIndex, loserIndex;
+            let winner, loser;
 
-            if (attackValue >= defenseValue) { // Attacker wins ties
+            if (attackValue > defenseValue) { // Attacker wins ONLY if strictly greater
                 winner = attacker;
                 loser = defender;
-                winnerIndex = attackerIndex;
-                loserIndex = defenderIndex;
                 logMessage(`Attacker wins! ${attacker.unit} defeats ${defender.unit}.`);
-            } else {
-                winner = defender;
-                loser = attacker;
-                winnerIndex = defenderIndex;
-                loserIndex = attackerIndex;
-                logMessage(`Defender wins! ${defender.unit} defeats ${attacker.unit}.`);
-            }
 
-            // Add loser to defeated list
-            defeatedUnits.push({ unit: loser.unit, terrain: loser.terrain, owner: loser.owner });
+                // Add loser to defeated list
+                defeatedUnits.push({ unit: loser.unit, terrain: loser.terrain, owner: loser.owner });
 
-            // Update board state
-            if (winner === attacker) {
-                // Attacker moves into defender's spot
+                // Update board state: Attacker moves into defender's spot
                 defender.unit = attacker.unit;
                 defender.owner = attacker.owner;
                 defender.hidden = false; // Ensure winner is revealed
@@ -548,39 +534,48 @@
 
                 // Update positions set
                 placedPositions.delete(`${attacker.x}_${attacker.y}`);
+                // Note: defender's position key remains in placedPositions as it's now occupied by the winner
 
-            } else {
-                // Defender holds position, clear attacker's spot
+            } else { // Defender wins if attack <= defense (Defender wins ties)
+                winner = defender;
+                loser = attacker;
+                logMessage(`Defender wins! ${defender.unit} defeats ${attacker.unit}.`);
+
+                // Add loser to defeated list
+                defeatedUnits.push({ unit: loser.unit, terrain: loser.terrain, owner: loser.owner });
+
+                // Update board state: Defender holds position, clear attacker's spot
                 attacker.unit = null;
                 attacker.owner = null;
                 attacker.hidden = true; // Visually empty
 
                 // Update positions set
                 placedPositions.delete(`${attacker.x}_${attacker.y}`);
-                // Defender remains revealed
+                // Defender remains revealed and stays in place
                 defender.hidden = false;
             }
 
 
             // Check for win conditions
-            const remainingUnitsP1 = board.filter(c => c && c.owner === 1 && c.unit && c.unit !== 'HQ').length;
-            const remainingUnitsP2 = board.filter(c => c && c.owner === 2 && c.unit && c.unit !== 'HQ').length;
-            const hqP1 = board.find(c => c && c.unit === 'HQ' && c.owner === 1);
-            const hqP2 = board.find(c => c && c.unit === 'HQ' && c.owner === 2);
+            const commandUnit = 'Mobile Command'; // Define the command unit type
+            const remainingUnitsP1 = board.filter(c => c && c.owner === 1 && c.unit && c.unit !== commandUnit).length;
+            const remainingUnitsP2 = board.filter(c => c && c.owner === 2 && c.unit && c.unit !== commandUnit).length;
+            const commandP1 = board.find(c => c && c.unit === commandUnit && c.owner === 1);
+            const commandP2 = board.find(c => c && c.unit === commandUnit && c.owner === 2);
 
             let gameOver = false;
-            if (!hqP2) { // Player 1 captured Player 2's HQ
-                logMessage(`Player 1 wins by capturing the HQ!`);
-                gameOver = true;
-            } else if (!hqP1) { // Player 2 captured Player 1's HQ
-                logMessage(`Player 2 wins by capturing the HQ!`);
-                gameOver = true;
+            if (!commandP2) { // Player 1 captured Player 2's Mobile Command
+                 logMessage(`Player 1 wins by capturing the Mobile Command!`);
+                 gameOver = true;
+            } else if (!commandP1) { // Player 2 captured Player 1's Mobile Command
+                 logMessage(`Player 2 wins by capturing the Mobile Command!`);
+                 gameOver = true;
             } else if (remainingUnitsP2 === 0) {
-                logMessage(`Player 1 wins by eliminating all movable units!`);
-                gameOver = true;
+                 logMessage(`Player 1 wins by eliminating all other movable units!`);
+                 gameOver = true;
             } else if (remainingUnitsP1 === 0) {
-                logMessage(`Player 2 wins by eliminating all movable units!`);
-                gameOver = true;
+                 logMessage(`Player 2 wins by eliminating all other movable units!`);
+                 gameOver = true;
             }
 
 
