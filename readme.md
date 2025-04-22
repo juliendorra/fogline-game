@@ -5,6 +5,10 @@
 
 ---
 
+## ▶️ [Play Now (Peer-to-Peer)](./peer-game.html)
+
+---
+
 ## 🎯 Objective
 
 Capture your opponent’s **Mobile Command** or eliminate all their other movable units. Outsmart your opponent with timing, terrain, and tactical reveals.
@@ -105,6 +109,20 @@ You win by either:
 | Infantry        | 3   | 3      | 3       | 🏞️ Plains, 🌲 Forest, ⛰️ Mountain |
 | Artillery       | 1   | 5      | 1       | 🏞️ Plains              |
 | Special Ops     | 1   | 3      | 1       | 🏞️ Plains, 🌲 Forest, ⛰️ Mountain |
+
+---
+
+## 🌐 How to Play Online (Peer-to-Peer)
+
+This version uses PeerJS for direct browser-to-browser connection.
+
+1.  **Open the Game**: Both players open the [Play Now link](./fogline).
+2.  **Get Your ID**: Each player will see their unique "Peer ID" at the top of the page (e.g., `cce07bf7-[more values]-128cd3`).
+3.  **Share ID**: One player (Player 1 / Host) copies their Peer ID and sends it to the other player (Player 2 / Guest) through any communication channel (chat, email, etc.).
+4.  **Connect**: Player 2 pastes Player 1's ID into the "Connect to Peer ID" input box and clicks "Connect".
+5.  **Start Playing**: Once connected, Player 1 (the Host) will automatically start the game setup. Follow the on-screen instructions for the placement phase.
+
+*Note: If the connection drops, you may need to refresh the page and reconnect.*
 
 ---
 
