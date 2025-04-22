@@ -319,16 +319,21 @@
             left: 10px;
             top: 50%;
             transform: translateY(-50%);
-            width: 220px; /* Adjust width as needed */
-            max-height: 80vh; /* Limit height */
-            overflow-y: auto; /* Add scroll if content overflows */
+            width: 220px;
+            /* Adjust width as needed */
+            max-height: 80vh;
+            /* Limit height */
+            overflow-y: auto;
+            /* Add scroll if content overflows */
             background-color: #fdfdfd;
             border: 1px solid #aaa;
             border-radius: 8px;
             box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3);
             padding: 15px;
-            z-index: 100; /* Ensure it's above other elements */
-            display: none; /* Hidden by default */
+            z-index: 100;
+            /* Ensure it's above other elements */
+            display: none;
+            /* Hidden by default */
             font-size: 12px;
         }
 
@@ -356,52 +361,93 @@
             justify-content: space-between;
             align-items: center;
         }
-         #memo-popover .memo-unit {
+
+        #memo-popover .memo-unit {
             font-weight: bold;
-            flex-basis: 45%; /* Adjust as needed */
+            flex-basis: 45%;
+            /* Adjust as needed */
             text-align: left;
-         }
-         #memo-popover .memo-terrain {
-            flex-basis: 50%; /* Adjust as needed */
-            text-align: left; /* Align terrain block to left */
-            font-size: 14px; /* Slightly larger emojis */
-            display: grid; /* Use grid for spatial layout */
+        }
+
+        #memo-popover .memo-terrain {
+            flex-basis: 50%;
+            /* Adjust as needed */
+            text-align: left;
+            /* Align terrain block to left */
+            font-size: 14px;
+            /* Slightly larger emojis */
+            display: grid;
+            /* Use grid for spatial layout */
             grid-template-columns: 1fr 1fr;
             grid-template-rows: 1fr 1fr;
-            gap: 0px; /* Adjust gap as needed */
-            width: 40px; /* Fixed width for the grid */
-            height: 40px; /* Fixed height for the grid */
-            place-items: center; /* Center emojis in grid cells */
-            margin-right: 10px; /* Space between terrain and unit */
-         }
-         #memo-popover .memo-terrain .memo-edge-top { grid-column: 1 / 3; grid-row: 1; }
-         #memo-popover .memo-terrain .memo-edge-right { grid-column: 2; grid-row: 1 / 3; align-self: center; }
-         #memo-popover .memo-terrain .memo-edge-bottom { grid-column: 1 / 3; grid-row: 2; }
-         #memo-popover .memo-terrain .memo-edge-left { grid-column: 1; grid-row: 1 / 3; align-self: center; }
+            gap: 0px;
+            /* Adjust gap as needed */
+            width: 40px;
+            /* Fixed width for the grid */
+            height: 40px;
+            /* Fixed height for the grid */
+            place-items: center;
+            /* Center emojis in grid cells */
+            margin-right: 10px;
+            /* Space between terrain and unit */
+        }
 
-         #memo-popover .memo-unit {
+        #memo-popover .memo-terrain .memo-edge-top {
+            grid-column: 1 / 3;
+            grid-row: 1;
+        }
+
+        #memo-popover .memo-terrain .memo-edge-right {
+            grid-column: 2;
+            grid-row: 1 / 3;
+            align-self: center;
+        }
+
+        #memo-popover .memo-terrain .memo-edge-bottom {
+            grid-column: 1 / 3;
+            grid-row: 2;
+        }
+
+        #memo-popover .memo-terrain .memo-edge-left {
+            grid-column: 1;
+            grid-row: 1 / 3;
+            align-self: center;
+        }
+
+        #memo-popover .memo-unit {
             font-weight: bold;
-            flex-basis: 50%; /* Adjust as needed */
-            text-align: right; /* Align unit name to right */
-         }
+            flex-basis: 50%;
+            /* Adjust as needed */
+            text-align: right;
+            /* Align unit name to right */
+        }
 
 
         #memo-toggle-button {
-             /* background-color removed, will be set dynamically */
-             color: white; /* Keep text white */
-             border: none; /* Assuming it should look like other buttons */
-             padding: 8px 15px; /* Match other buttons */
-             font-size: 14px; /* Match other buttons */
-             border-radius: 4px; /* Match other buttons */
-             margin: 5px; /* Match other buttons */
-             cursor: pointer; /* Ensure cursor is pointer */
-             transition: background-color 0.2s ease; /* Add transition */
+            /* background-color removed, will be set dynamically */
+            color: white;
+            /* Keep text white */
+            border: none;
+            /* Assuming it should look like other buttons */
+            padding: 8px 15px;
+            /* Match other buttons */
+            font-size: 14px;
+            /* Match other buttons */
+            border-radius: 4px;
+            /* Match other buttons */
+            margin: 5px;
+            /* Match other buttons */
+            cursor: pointer;
+            /* Ensure cursor is pointer */
+            transition: background-color 0.2s ease;
+            /* Add transition */
         }
+
         #memo-toggle-button:hover {
-             /* Hover effect can be slightly darker version of player color,
+            /* Hover effect can be slightly darker version of player color,
                 or a generic effect like slight brightness change.
                 Let's use filter for a simple darken effect. */
-             filter: brightness(90%);
+            filter: brightness(90%);
         }
 
         /* --- Placement Phase UI --- */
@@ -415,15 +461,18 @@
             max-width: 1000px;
             text-align: center;
         }
+
         #placement-controls h4 {
             margin-top: 0;
             margin-bottom: 10px;
         }
+
         .placement-area {
             display: flex;
             justify-content: space-around;
             margin-bottom: 10px;
         }
+
         .placement-list {
             border: 1px solid #ddd;
             padding: 10px;
@@ -433,16 +482,19 @@
             overflow-y: auto;
             min-width: 200px;
         }
+
         .placement-list h5 {
             margin: 0 0 5px 0;
             text-align: center;
             font-size: 14px;
         }
+
         .placement-list ul {
             list-style: none;
             padding: 0;
             margin: 0;
         }
+
         .placement-list li {
             padding: 5px;
             margin-bottom: 3px;
@@ -450,57 +502,236 @@
             border-radius: 3px;
             cursor: pointer;
             font-size: 12px;
-            display: flex; /* Use flex for alignment */
-            align-items: center; /* Center items vertically */
-            justify-content: space-between; /* Space out content */
+            display: flex;
+            /* Use flex for alignment */
+            align-items: center;
+            /* Center items vertically */
+            justify-content: space-between;
+            /* Space out content */
         }
+
         .placement-list li:hover {
             background-color: #eef;
         }
+
         .placement-list li.selected-for-placement {
             background-color: #bbf;
             font-weight: bold;
         }
+
         .placement-terrain-preview {
-            font-size: 14px; /* Emoji size */
+            font-size: 14px;
+            /* Emoji size */
             display: inline-grid;
             grid-template-columns: 1fr 1fr;
             grid-template-rows: 1fr 1fr;
             gap: 0px;
-            width: 30px; /* Fixed width */
-            height: 30px; /* Fixed height */
+            width: 30px;
+            /* Fixed width */
+            height: 30px;
+            /* Fixed height */
             place-items: center;
-            margin-right: 8px; /* Space between preview and index */
+            margin-right: 8px;
+            /* Space between preview and index */
         }
-        .placement-terrain-preview .pt-top { grid-column: 1 / 3; grid-row: 1; }
-        .placement-terrain-preview .pt-right { grid-column: 2; grid-row: 1 / 3; align-self: center; }
-        .placement-terrain-preview .pt-bottom { grid-column: 1 / 3; grid-row: 2; }
-        .placement-terrain-preview .pt-left { grid-column: 1; grid-row: 1 / 3; align-self: center; }
+
+        .placement-terrain-preview .pt-top {
+            grid-column: 1 / 3;
+            grid-row: 1;
+        }
+
+        .placement-terrain-preview .pt-right {
+            grid-column: 2;
+            grid-row: 1 / 3;
+            align-self: center;
+        }
+
+        .placement-terrain-preview .pt-bottom {
+            grid-column: 1 / 3;
+            grid-row: 2;
+        }
+
+        .placement-terrain-preview .pt-left {
+            grid-column: 1;
+            grid-row: 1 / 3;
+            align-self: center;
+        }
 
         /* --- Placeholder for Placement --- */
         .placement-placeholder {
             width: 75px;
             height: 105px;
-            border: 2px dashed #aaa; /* Dashed border */
+            border: 2px dashed #aaa;
+            /* Dashed border */
             border-radius: 5px;
-            background-color: rgba(200, 200, 200, 0.2); /* Slightly transparent background */
-            margin: 2.5px; /* Match card margin */
+            background-color: rgba(200, 200, 200, 0.2);
+            /* Slightly transparent background */
+            margin: 2.5px;
+            /* Match card margin */
             box-sizing: border-box;
             display: flex;
             justify-content: center;
             align-items: center;
             font-size: 30px;
             color: #aaa;
-            cursor: copy; /* Indicate placement action */
-            grid-column: var(--grid-x); /* Use CSS variables for position */
+            cursor: copy;
+            /* Indicate placement action */
+            grid-column: var(--grid-x);
+            /* Use CSS variables for position */
             grid-row: var(--grid-y);
         }
+
         .placement-placeholder:hover {
             background-color: rgba(180, 180, 180, 0.4);
             border-color: #888;
         }
 
+        /* --- Placement Phase Visual Cards --- */
+        .placement-card-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            /* 4 columns */
+            gap: 8px;
+            /* Space between cards */
+            padding: 10px;
+            border: 1px solid #ddd;
+            background-color: #fff;
+            border-radius: 5px;
+            min-height: 150px;
+            /* Ensure minimum height */
+            max-width: 380px;
+            /* Adjust based on card size + gap */
+            margin: 0 auto;
+            /* Center the grid if container is wider */
+        }
 
+        .placement-unit-card,
+        .placement-terrain-card {
+            width: 75px;
+            /* Match game card width */
+            height: 105px;
+            /* Match game card height */
+            border: 1px solid #aaa;
+            border-radius: 5px;
+            background-color: #fff;
+            /* Match game card background */
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px;
+            box-sizing: border-box;
+            position: relative;
+            /* For potential absolute elements */
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+            font-size: 11px;
+            /* Smaller base font */
+            box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .placement-unit-card:hover,
+        .placement-terrain-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .placement-unit-card.selected-for-placement,
+        .placement-terrain-card.selected-for-placement {
+            border: 2px solid #007bff;
+            /* Blue selection border */
+            box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
+            background-color: #e7f3ff;
+            /* Light blue background */
+        }
+
+        .placement-unit-card .unit-name {
+            font-weight: bold;
+            font-size: 13px;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .placement-unit-card .stats {
+            font-size: 11px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 5px;
+        }
+
+        .placement-unit-card .stats .attack,
+        .placement-unit-card .stats .defense {
+            padding: 1px 3px;
+            border-radius: 2px;
+            border: 1px solid #ccc;
+        }
+
+        .placement-unit-card .stats .attack {
+            background-color: #ffdddd;
+            border-color: #ffaaaa;
+        }
+
+        .placement-unit-card .stats .defense {
+            background-color: #ddeeff;
+            border-color: #aaddff;
+        }
+
+
+        /* Use absolute positioning for edges, similar to main card */
+        .placement-terrain-card .terrain-edges {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            /* Don't interfere with clicks */
+            z-index: 0;
+            /* Behind potential future content */
+        }
+
+        .placement-terrain-card .terrain-edge {
+            /* Common style for edges */
+            position: absolute;
+            font-size: 18px;
+            /* Match main card emoji size */
+            line-height: 1;
+            opacity: 0.8;
+            /* Match main card opacity */
+        }
+
+        /* Individual edge positioning, matching .card .terrain-edge */
+        .placement-terrain-card .edge-top {
+            top: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .placement-terrain-card .edge-right {
+            top: 50%;
+            right: 2px;
+            transform: translateY(-50%);
+        }
+
+        .placement-terrain-card .edge-bottom {
+            bottom: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .placement-terrain-card .edge-left {
+            top: 50%;
+            left: 2px;
+            transform: translateY(-50%);
+        }
+
+        /* Remove old list styles */
+        .placement-list {
+            display: none;
+        }
+
+        /* Hide old list containers */
     </style>
 </head>
 
@@ -518,13 +749,17 @@
     <div id="placement-controls" style="display: none;">
         <h4 id="placement-title">Placement Phase</h4>
         <div class="placement-area">
-            <div class="placement-list">
+            <div>
                 <h5>Available Units</h5>
-                <ul id="available-units-list"></ul>
+                <div id="placement-units-area" class="placement-card-grid">
+                    <!-- Unit cards will be generated here -->
+                </div>
             </div>
-            <div class="placement-list">
+            <div>
                 <h5>Available Terrains</h5>
-                <ul id="available-terrains-list"></ul>
+                <div id="placement-terrains-area" class="placement-card-grid">
+                    <!-- Terrain cards will be generated here -->
+                </div>
             </div>
         </div>
         <p id="placement-instructions">Select one unit and one terrain, then click an empty, valid spot on the board.</p>
@@ -562,8 +797,8 @@
         let selectedUnitForPlacement = null; // Name of the selected unit
         let selectedUnitIndexForPlacement = null; // Index of the selected unit in the available list
         let selectedTerrainIndexForPlacement = null;
-        let placedCardCount = 0;
-        const TOTAL_CARDS_TO_PLACE = 16;
+        let placedCardPairCount = 0;
+        const TOTAL_CARD_PAIRS_TO_PLACE = 16;
 
         const START_GRID_COORD = 10; // Start placing cards around grid cell 10,10
         // Terrain Types & Emojis
@@ -948,47 +1183,52 @@
 
                 // Update placement title and instructions
                 document.getElementById('placement-title').textContent = `Placement Phase - Player ${currentPlayer}'s Turn`;
-                document.getElementById('placement-instructions').textContent = `Select one unit and one terrain, then click an empty, valid spot on the board. (${placedCardCount}/${TOTAL_CARDS_TO_PLACE} placed)`;
+                document.getElementById('placement-instructions').textContent = `Select one unit and one terrain, then click an empty, valid spot on the board. (${placedCardPairCount}/${TOTAL_CARD_PAIRS_TO_PLACE} placed)`;
 
-                // Populate available units list
-                const unitsList = document.getElementById('available-units-list');
-                unitsList.innerHTML = '';
-                playerAvailableUnits[currentPlayer].forEach((unitName, index) => { // Add index here
-                    const li = document.createElement('li');
-                    li.textContent = unitName;
-                    // Pass both index and name to the selection function
-                    li.onclick = () => selectUnitForPlacement(index, unitName);
-                    // Highlight based on the stored index
-                    if (index === selectedUnitIndexForPlacement) {
-                        li.classList.add('selected-for-placement');
-                    }
-                    unitsList.appendChild(li);
-                });
-
-                // Populate available terrains list
-                const terrainsList = document.getElementById('available-terrains-list');
-                terrainsList.innerHTML = '';
-                playerAvailableTerrains[currentPlayer].forEach(terrainIndex => {
-                    const terrainData = fixedTerrainCards[terrainIndex];
-                    const li = document.createElement('li');
-                    li.onclick = () => selectTerrainForPlacement(terrainIndex);
-                    if (terrainIndex === selectedTerrainIndexForPlacement) {
-                        li.classList.add('selected-for-placement');
-                    }
-                    // Add terrain preview
-                    const previewSpan = document.createElement('span');
-                    previewSpan.className = 'placement-terrain-preview';
-                    previewSpan.innerHTML = `
-                        <span class="pt-top">${TERRAIN_EMOJIS[terrainData.top]}</span>
-                        <span class="pt-right">${TERRAIN_EMOJIS[terrainData.right]}</span>
-                        <span class="pt-bottom">${TERRAIN_EMOJIS[terrainData.bottom]}</span>
-                        <span class="pt-left">${TERRAIN_EMOJIS[terrainData.left]}</span>
+                // Populate available units area with visual cards
+                const unitsArea = document.getElementById('placement-units-area');
+                unitsArea.innerHTML = ''; // Clear previous cards
+                playerAvailableUnits[currentPlayer].forEach((unitName, index) => {
+                    const cardDiv = document.createElement('div');
+                    cardDiv.className = 'placement-unit-card';
+                    const stats = unitStats[unitName];
+                    cardDiv.innerHTML = `
+                        <div class="unit-name">${unitName}</div>
+                        <div class="stats">
+                            <span class="attack">A: ${stats.attack}</span>
+                            <span class="defense">D: ${stats.defense}</span>
+                        </div>
                     `;
-                    li.appendChild(previewSpan);
-                    // Add text identifier (optional, could be index or a name)
-                    // li.appendChild(document.createTextNode(` Card #${terrainIndex + 1}`)); // Example text
-                    terrainsList.appendChild(li);
+                    cardDiv.onclick = () => selectUnitForPlacement(index, unitName);
+                    if (index === selectedUnitIndexForPlacement) {
+                        cardDiv.classList.add('selected-for-placement');
+                    }
+                    unitsArea.appendChild(cardDiv);
                 });
+
+                // Populate available terrains area with visual cards
+                const terrainsArea = document.getElementById('placement-terrains-area');
+                terrainsArea.innerHTML = ''; // Clear previous cards
+                playerAvailableTerrains[currentPlayer].forEach(terrainIndex => {
+                    const cardDiv = document.createElement('div');
+                    // Add player class for styling (e.g., border)
+                    cardDiv.className = `placement-terrain-card player${currentPlayer}`;
+                    const terrainData = fixedTerrainCards[terrainIndex];
+                    cardDiv.innerHTML = `
+                        <div class="terrain-edges">
+                            <span class="terrain-edge edge-top">${TERRAIN_EMOJIS[terrainData.top]}</span>
+                            <span class="terrain-edge edge-right">${TERRAIN_EMOJIS[terrainData.right]}</span>
+                            <span class="terrain-edge edge-bottom">${TERRAIN_EMOJIS[terrainData.bottom]}</span>
+                            <span class="terrain-edge edge-left">${TERRAIN_EMOJIS[terrainData.left]}</span>
+                        </div>
+                    `;
+                    cardDiv.onclick = () => selectTerrainForPlacement(terrainIndex);
+                    if (terrainIndex === selectedTerrainIndexForPlacement) {
+                        cardDiv.classList.add('selected-for-placement');
+                    }
+                    terrainsArea.appendChild(cardDiv);
+                });
+
 
             } else { // GAMEPLAY state
                 placementControlsDiv.style.display = 'none';
@@ -1159,16 +1399,16 @@
             selectedUnitForPlacement = null;
             selectedUnitIndexForPlacement = null; // Reset index as well
             selectedTerrainIndexForPlacement = null;
-            placedCardCount = 0;
+            placedCardPairCount = 0;
 
             // Store initial pairings for memo pad (deep copy needed)
-             initialPlayerPairings = {
-                 1: playerAvailableUnits[1].map((unit, i) => ({ unit: unit, terrain: fixedTerrainCards[playerAvailableTerrains[1][i]] })),
-                 2: playerAvailableUnits[2].map((unit, i) => ({ unit: unit, terrain: fixedTerrainCards[playerAvailableTerrains[2][i]] }))
-             };
-             // Sort for consistent memo display
-             initialPlayerPairings[1].sort((a, b) => a.unit.localeCompare(b.unit));
-             initialPlayerPairings[2].sort((a, b) => a.unit.localeCompare(b.unit));
+            initialPlayerPairings = {
+                1: playerAvailableUnits[1].map((unit, i) => ({ unit: unit, terrain: fixedTerrainCards[playerAvailableTerrains[1][i]] })),
+                2: playerAvailableUnits[2].map((unit, i) => ({ unit: unit, terrain: fixedTerrainCards[playerAvailableTerrains[2][i]] }))
+            };
+            // Sort for consistent memo display
+            initialPlayerPairings[1].sort((a, b) => a.unit.localeCompare(b.unit));
+            initialPlayerPairings[2].sort((a, b) => a.unit.localeCompare(b.unit));
 
 
             currentPlayer = 1; // Player 1 starts placement
@@ -1236,9 +1476,9 @@
             let targetGridX = clickedGridX;
             let targetGridY = clickedGridY;
             if (event.target.classList.contains('placement-placeholder')) {
-                 targetGridX = parseInt(event.target.dataset.gridX, 10);
-                 targetGridY = parseInt(event.target.dataset.gridY, 10);
-                 logMessage(`Clicked placeholder at (${targetGridX}, ${targetGridY})`);
+                targetGridX = parseInt(event.target.dataset.gridX, 10);
+                targetGridY = parseInt(event.target.dataset.gridY, 10);
+                logMessage(`Clicked placeholder at (${targetGridX}, ${targetGridY})`);
             }
 
 
@@ -1247,26 +1487,26 @@
             // --- Validate Placement Location ---
             // Check if the target spot is one of the valid potential spots
             const potentialSpots = new Set();
-             if (placedPositions.size === 0) {
-                 potentialSpots.add(`${START_GRID_COORD}_${START_GRID_COORD}`);
-             } else {
-                 placedPositions.forEach(posKey => {
-                     const [x, y] = posKey.split('_').map(Number);
-                     const neighbors = [
-                         `${x + 1}_${y}`, `${x - 1}_${y}`,
-                         `${x}_${y + 1}`, `${x}_${y - 1}`
-                     ];
-                     neighbors.forEach(neighborKey => {
-                         if (!placedPositions.has(neighborKey)) {
-                             potentialSpots.add(neighborKey);
-                         }
-                     });
-                 });
-             }
+            if (placedPositions.size === 0) {
+                potentialSpots.add(`${START_GRID_COORD}_${START_GRID_COORD}`);
+            } else {
+                placedPositions.forEach(posKey => {
+                    const [x, y] = posKey.split('_').map(Number);
+                    const neighbors = [
+                        `${x + 1}_${y}`, `${x - 1}_${y}`,
+                        `${x}_${y + 1}`, `${x}_${y - 1}`
+                    ];
+                    neighbors.forEach(neighborKey => {
+                        if (!placedPositions.has(neighborKey)) {
+                            potentialSpots.add(neighborKey);
+                        }
+                    });
+                });
+            }
 
             if (!potentialSpots.has(gridKey)) {
-                 logMessage("Invalid placement spot. Click on one of the dashed outlines.");
-                 return;
+                logMessage("Invalid placement spot. Click on one of the dashed outlines.");
+                return;
             }
 
             // Spot is valid and unoccupied (implicit from being in potentialSpots)
@@ -1279,9 +1519,9 @@
             // Remove placed unit and terrain from available lists
             // Use the stored index to remove the unit directly
             if (selectedUnitIndexForPlacement !== null && selectedUnitIndexForPlacement < playerAvailableUnits[currentPlayer].length) {
-                 playerAvailableUnits[currentPlayer].splice(selectedUnitIndexForPlacement, 1); // Remove 1 element at the stored index
+                playerAvailableUnits[currentPlayer].splice(selectedUnitIndexForPlacement, 1); // Remove 1 element at the stored index
             } else {
-                 console.error("Error: Invalid selected unit index for removal."); // Should not happen if selection is working
+                console.error("Error: Invalid selected unit index for removal."); // Should not happen if selection is working
             }
 
             // Terrain indices are unique, so filter is fine here
@@ -1291,10 +1531,10 @@
             selectedUnitForPlacement = null;
             selectedUnitIndexForPlacement = null; // Reset the index
             selectedTerrainIndexForPlacement = null;
-            placedCardCount++;
+            placedCardPairCount++;
 
             // Check if placement phase is over
-            if (placedCardCount >= TOTAL_CARDS_TO_PLACE) {
+            if (placedCardPairCount >= TOTAL_CARD_PAIRS_TO_PLACE) {
                 gameState = 'GAMEPLAY';
                 currentPlayer = 1; // Player 1 starts the gameplay phase
                 logMessage("Placement complete! Player 1's turn to move or attack.");
