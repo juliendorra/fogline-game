@@ -404,6 +404,103 @@
              filter: brightness(90%);
         }
 
+        /* --- Placement Phase UI --- */
+        #placement-controls {
+            margin-top: 10px;
+            margin-bottom: 10px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            width: 90%;
+            max-width: 1000px;
+            text-align: center;
+        }
+        #placement-controls h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .placement-area {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 10px;
+        }
+        .placement-list {
+            border: 1px solid #ddd;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 5px;
+            max-height: 150px;
+            overflow-y: auto;
+            min-width: 200px;
+        }
+        .placement-list h5 {
+            margin: 0 0 5px 0;
+            text-align: center;
+            font-size: 14px;
+        }
+        .placement-list ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .placement-list li {
+            padding: 5px;
+            margin-bottom: 3px;
+            border: 1px solid #eee;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex; /* Use flex for alignment */
+            align-items: center; /* Center items vertically */
+            justify-content: space-between; /* Space out content */
+        }
+        .placement-list li:hover {
+            background-color: #eef;
+        }
+        .placement-list li.selected-for-placement {
+            background-color: #bbf;
+            font-weight: bold;
+        }
+        .placement-terrain-preview {
+            font-size: 14px; /* Emoji size */
+            display: inline-grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 0px;
+            width: 30px; /* Fixed width */
+            height: 30px; /* Fixed height */
+            place-items: center;
+            margin-right: 8px; /* Space between preview and index */
+        }
+        .placement-terrain-preview .pt-top { grid-column: 1 / 3; grid-row: 1; }
+        .placement-terrain-preview .pt-right { grid-column: 2; grid-row: 1 / 3; align-self: center; }
+        .placement-terrain-preview .pt-bottom { grid-column: 1 / 3; grid-row: 2; }
+        .placement-terrain-preview .pt-left { grid-column: 1; grid-row: 1 / 3; align-self: center; }
+
+        /* --- Placeholder for Placement --- */
+        .placement-placeholder {
+            width: 75px;
+            height: 105px;
+            border: 2px dashed #aaa; /* Dashed border */
+            border-radius: 5px;
+            background-color: rgba(200, 200, 200, 0.2); /* Slightly transparent background */
+            margin: 2.5px; /* Match card margin */
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            color: #aaa;
+            cursor: copy; /* Indicate placement action */
+            grid-column: var(--grid-x); /* Use CSS variables for position */
+            grid-row: var(--grid-y);
+        }
+        .placement-placeholder:hover {
+            background-color: rgba(180, 180, 180, 0.4);
+            border-color: #888;
+        }
+
+
     </style>
 </head>
 
@@ -416,6 +513,22 @@
     </div>
 
     <div id="info">Loading...</div>
+
+    <!-- Placement Phase Controls (hidden initially) -->
+    <div id="placement-controls" style="display: none;">
+        <h4 id="placement-title">Placement Phase</h4>
+        <div class="placement-area">
+            <div class="placement-list">
+                <h5>Available Units</h5>
+                <ul id="available-units-list"></ul>
+            </div>
+            <div class="placement-list">
+                <h5>Available Terrains</h5>
+                <ul id="available-terrains-list"></ul>
+            </div>
+        </div>
+        <p id="placement-instructions">Select one unit and one terrain, then click an empty, valid spot on the board.</p>
+    </div>
 
     <div id="game-area">
         <div id="board"></div>
@@ -436,13 +549,23 @@
         let currentPlayer = 1;
         let playerUnits = {}; // { 1: [{unit, terrainCardIndex}, ...], 2: [...] }
         let placedPositions = new Set(); // Store "x_y" strings
-        let selectedCardIndex = null; // Index in the board array
+        let selectedCardIndex = null; // Index in the board array for gameplay phase
         let defeatedUnits = []; // Stores { unit, terrain: {top, right, bottom, left}, owner } of defeated units
         let nextCardId = 0; // Unique ID for each card
         let initialPlayerPairings = { 1: [], 2: [] }; // To store initial setup for memo pad
+        let isResolvingAttack = false; // Flag to prevent clicks during attack resolution
+
+        // --- Game State & Placement Variables ---
+        let gameState = 'PLACEMENT'; // 'PLACEMENT' or 'GAMEPLAY'
+        let playerAvailableUnits = { 1: [], 2: [] };
+        let playerAvailableTerrains = { 1: [], 2: [] }; // Stores terrain indices
+        let selectedUnitForPlacement = null; // Name of the selected unit
+        let selectedUnitIndexForPlacement = null; // Index of the selected unit in the available list
+        let selectedTerrainIndexForPlacement = null;
+        let placedCardCount = 0;
+        const TOTAL_CARDS_TO_PLACE = 16;
 
         const START_GRID_COORD = 10; // Start placing cards around grid cell 10,10
-
         // Terrain Types & Emojis
         const TERRAIN_TYPES = {
             PLAINS: 'Plains',
@@ -572,7 +695,8 @@
 
 
         function handleCardClick(cardId) {
-            if (isResolvingAttack) return;
+            // This function handles clicks on CARDS during the GAMEPLAY phase
+            if (gameState !== 'GAMEPLAY' || isResolvingAttack) return;
 
             const clickedCardIndex = findCardIndexById(cardId);
             if (clickedCardIndex === -1) return;
@@ -769,27 +893,134 @@
         }
 
         function updateUI() {
-            // REMOVED: Automatic hiding of memo pad on UI update
-            // const memoPopover = document.getElementById('memo-popover');
-            // if (memoPopover) memoPopover.style.display = 'none';
+            const placementControlsDiv = document.getElementById('placement-controls');
+            const infoDiv = document.getElementById('info');
+            const memoButton = document.getElementById('memo-toggle-button');
+            const boardDiv = document.getElementById('board');
 
+            // --- State-Specific UI Updates ---
+
+            // --- Remove Old Placeholders ---
+            // Do this regardless of state to clean up when switching from PLACEMENT to GAMEPLAY
+            boardDiv.querySelectorAll('.placement-placeholder').forEach(el => el.remove());
+
+            if (gameState === 'PLACEMENT') {
+                placementControlsDiv.style.display = 'block';
+                infoDiv.style.display = 'none'; // Hide regular info during placement
+                memoButton.style.display = 'none'; // Hide memo button during placement
+                boardDiv.style.cursor = 'copy'; // Indicate placement action
+
+                // --- Calculate and Render Placement Placeholders ---
+                const potentialSpots = new Set();
+                if (placedPositions.size === 0) {
+                    // If board is empty, offer the starting spot
+                    potentialSpots.add(`${START_GRID_COORD}_${START_GRID_COORD}`);
+                } else {
+                    placedPositions.forEach(posKey => {
+                        const [x, y] = posKey.split('_').map(Number);
+                        const neighbors = [
+                            `${x + 1}_${y}`, `${x - 1}_${y}`,
+                            `${x}_${y + 1}`, `${x}_${y - 1}`
+                        ];
+                        neighbors.forEach(neighborKey => {
+                            if (!placedPositions.has(neighborKey)) {
+                                potentialSpots.add(neighborKey);
+                            }
+                        });
+                    });
+                }
+
+                potentialSpots.forEach(spotKey => {
+                    const [x, y] = spotKey.split('_').map(Number);
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'placement-placeholder';
+                    placeholder.style.setProperty('--grid-x', x); // Use CSS variables
+                    placeholder.style.setProperty('--grid-y', y);
+                    // Optional: Add a visual cue like a plus sign
+                    // placeholder.textContent = '+';
+                    // Add data attributes to potentially simplify click handling later
+                    placeholder.dataset.gridX = x;
+                    placeholder.dataset.gridY = y;
+                    boardDiv.appendChild(placeholder);
+                });
+                // --- End Placeholder Rendering ---
+
+
+                // Update placement title and instructions
+                document.getElementById('placement-title').textContent = `Placement Phase - Player ${currentPlayer}'s Turn`;
+                document.getElementById('placement-instructions').textContent = `Select one unit and one terrain, then click an empty, valid spot on the board. (${placedCardCount}/${TOTAL_CARDS_TO_PLACE} placed)`;
+
+                // Populate available units list
+                const unitsList = document.getElementById('available-units-list');
+                unitsList.innerHTML = '';
+                playerAvailableUnits[currentPlayer].forEach((unitName, index) => { // Add index here
+                    const li = document.createElement('li');
+                    li.textContent = unitName;
+                    // Pass both index and name to the selection function
+                    li.onclick = () => selectUnitForPlacement(index, unitName);
+                    // Highlight based on the stored index
+                    if (index === selectedUnitIndexForPlacement) {
+                        li.classList.add('selected-for-placement');
+                    }
+                    unitsList.appendChild(li);
+                });
+
+                // Populate available terrains list
+                const terrainsList = document.getElementById('available-terrains-list');
+                terrainsList.innerHTML = '';
+                playerAvailableTerrains[currentPlayer].forEach(terrainIndex => {
+                    const terrainData = fixedTerrainCards[terrainIndex];
+                    const li = document.createElement('li');
+                    li.onclick = () => selectTerrainForPlacement(terrainIndex);
+                    if (terrainIndex === selectedTerrainIndexForPlacement) {
+                        li.classList.add('selected-for-placement');
+                    }
+                    // Add terrain preview
+                    const previewSpan = document.createElement('span');
+                    previewSpan.className = 'placement-terrain-preview';
+                    previewSpan.innerHTML = `
+                        <span class="pt-top">${TERRAIN_EMOJIS[terrainData.top]}</span>
+                        <span class="pt-right">${TERRAIN_EMOJIS[terrainData.right]}</span>
+                        <span class="pt-bottom">${TERRAIN_EMOJIS[terrainData.bottom]}</span>
+                        <span class="pt-left">${TERRAIN_EMOJIS[terrainData.left]}</span>
+                    `;
+                    li.appendChild(previewSpan);
+                    // Add text identifier (optional, could be index or a name)
+                    // li.appendChild(document.createTextNode(` Card #${terrainIndex + 1}`)); // Example text
+                    terrainsList.appendChild(li);
+                });
+
+            } else { // GAMEPLAY state
+                placementControlsDiv.style.display = 'none';
+                infoDiv.style.display = 'block'; // Show regular info
+                memoButton.style.display = 'inline-block'; // Show memo button
+                boardDiv.style.cursor = 'default'; // Reset cursor for gameplay
+
+                // Update Info Bar
+                const p1Units = board.filter(c => c && c.owner === 1 && c.unit).length;
+                const p2Units = board.filter(c => c && c.owner === 2 && c.unit).length;
+                infoDiv.innerHTML = `
+                    <span class="player1-text">Player 1 Units: ${p1Units}</span> |
+                    <span class="${currentPlayer === 1 ? 'player1-text' : 'player2-text'}">Current Turn: Player ${currentPlayer}</span> |
+                    <span class="player2-text">Player 2 Units: ${p2Units}</span>
+                 `;
+
+                // Update Memo Toggle Button Text and Color
+                if (memoButton) {
+                    memoButton.textContent = `Player ${currentPlayer} Memo`;
+                    memoButton.style.backgroundColor = currentPlayer === 1 ? '#4a90e2' : '#e94e77';
+                }
+                // If memo pad is open, update its content for the current player
+                const memoPopover = document.getElementById('memo-popover');
+                if (memoPopover && window.getComputedStyle(memoPopover).display !== 'none') {
+                    displayMemoPadContent(currentPlayer);
+                }
+            }
+
+            // --- Common UI Updates (Cards, Defeated Area) ---
             const attackerCard = selectedCardIndex !== null ? board[selectedCardIndex] : null;
 
-            // Update Memo Toggle Button Text and Color
-            const memoButton = document.getElementById('memo-toggle-button');
-            if (memoButton) {
-                memoButton.textContent = `Player ${currentPlayer} Memo`;
-                // Set background color based on current player
-                memoButton.style.backgroundColor = currentPlayer === 1 ? '#4a90e2' : '#e94e77';
-            }
-
-            // If memo pad is open, update its content for the current player
-            const memoPopover = document.getElementById('memo-popover');
-            if (memoPopover && window.getComputedStyle(memoPopover).display !== 'none') {
-                displayMemoPadContent(currentPlayer);
-            }
-
-
+            // --- Update Card Elements ---
             board.forEach((card, i) => {
                 if (!card || !card.element) return; // Skip removed/missing
 
@@ -878,16 +1109,6 @@
                 }
             });
 
-            // Update Info Bar
-            const infoDiv = document.getElementById('info');
-            const p1Units = board.filter(c => c && c.owner === 1 && c.unit).length;
-            const p2Units = board.filter(c => c && c.owner === 2 && c.unit).length;
-            infoDiv.innerHTML = `
-                <span class="player1-text">Player 1 Units: ${p1Units}</span> |
-                <span class="${currentPlayer === 1 ? 'player1-text' : 'player2-text'}">Current Turn: Player ${currentPlayer}</span> |
-                <span class="player2-text">Player 2 Units: ${p2Units}</span>
-             `;
-
             // Update Defeated Units Area
             const defeatedDiv = document.getElementById('defeated-units');
             defeatedDiv.innerHTML = '<h4>Defeated Units</h4>'; // Clear previous
@@ -919,88 +1140,178 @@
         }
 
         function resetGame() {
-            logMessage("Setting up new game with 4-sided terrain...");
+            logMessage("Setting up new game...");
+            // Reset Core Game State
             board = [];
             placedPositions.clear();
-            selectedCardIndex = null;
+            selectedCardIndex = null; // Gameplay selection
             isResolvingAttack = false;
             defeatedUnits = [];
             nextCardId = 0;
             document.getElementById('board').innerHTML = '';
             document.getElementById('defeated-units').innerHTML = '<h4>Defeated Units</h4>';
+            document.getElementById('memo-popover').style.display = 'none'; // Hide memo pad
 
-            // Prepare unit lists and terrain card indices (0-7) for each player
-            playerUnits = { 1: [], 2: [] };
-            const unitsP1 = shuffle(getUnitList());
-            const terrainIndicesP1 = shuffle([...Array(8).keys()]); // Shuffle indices [0, 1, ..., 7]
-            const unitsP2 = shuffle(getUnitList());
-            const terrainIndicesP2 = shuffle([...Array(8).keys()]); // Shuffle indices [0, 1, ..., 7]
+            // Reset Placement State
+            gameState = 'PLACEMENT';
+            playerAvailableUnits = { 1: shuffle(getUnitList()), 2: shuffle(getUnitList()) };
+            playerAvailableTerrains = { 1: shuffle([...Array(8).keys()]), 2: shuffle([...Array(8).keys()]) };
+            selectedUnitForPlacement = null;
+            selectedUnitIndexForPlacement = null; // Reset index as well
+            selectedTerrainIndexForPlacement = null;
+            placedCardCount = 0;
 
-            for (let i = 0; i < 8; i++) {
-                playerUnits[1].push({ unit: unitsP1[i], terrainCardIndex: terrainIndicesP1[i] });
-                // Removed duplicate push for player 1
-                playerUnits[2].push({ unit: unitsP2[i], terrainCardIndex: terrainIndicesP2[i] });
-            }
-
-            // Store a deep copy for the memo pad BEFORE consuming playerUnits
-            initialPlayerPairings = {
-                 1: playerUnits[1].map(p => ({ unit: p.unit, terrain: fixedTerrainCards[p.terrainCardIndex] })),
-                 2: playerUnits[2].map(p => ({ unit: p.unit, terrain: fixedTerrainCards[p.terrainCardIndex] }))
-            };
-            // Sort by unit name for consistent display in memo
-            initialPlayerPairings[1].sort((a, b) => a.unit.localeCompare(b.unit));
-            initialPlayerPairings[2].sort((a, b) => a.unit.localeCompare(b.unit));
+            // Store initial pairings for memo pad (deep copy needed)
+             initialPlayerPairings = {
+                 1: playerAvailableUnits[1].map((unit, i) => ({ unit: unit, terrain: fixedTerrainCards[playerAvailableTerrains[1][i]] })),
+                 2: playerAvailableUnits[2].map((unit, i) => ({ unit: unit, terrain: fixedTerrainCards[playerAvailableTerrains[2][i]] }))
+             };
+             // Sort for consistent memo display
+             initialPlayerPairings[1].sort((a, b) => a.unit.localeCompare(b.unit));
+             initialPlayerPairings[2].sort((a, b) => a.unit.localeCompare(b.unit));
 
 
-            // --- Automatic Placement (Simplified using Grid) ---
-            const startGridX = START_GRID_COORD;
-            const startGridY = START_GRID_COORD;
-            const firstPairP1 = playerUnits[1].pop();
-            const firstTerrainDataP1 = fixedTerrainCards[firstPairP1.terrainCardIndex];
-            placeCard(startGridX, startGridY, 1, firstPairP1.unit, firstTerrainDataP1);
+            currentPlayer = 1; // Player 1 starts placement
+            logMessage("Placement phase. Player 1's turn.");
 
-            currentPlayer = 2; // Player 2 places next
+            // Add the board click listener for placement
+            const boardDiv = document.getElementById('board');
+            // Remove previous listener if any to avoid duplicates on reset
+            boardDiv.removeEventListener('click', handleBoardClickForPlacement);
+            boardDiv.addEventListener('click', handleBoardClickForPlacement);
 
-            const gridDirections = [[1, 0], [-1, 0], [0, 1], [0, -1]]; // Right, Left, Down, Up
-
-            while (playerUnits[1].length > 0 || playerUnits[2].length > 0) {
-                let availablePositions = new Map();
-
-                board.forEach(card => {
-                    if (!card || !card.unit) return;
-                    const { gridX, gridY } = card;
-                    gridDirections.forEach(([dx, dy]) => {
-                        const nx = gridX + dx;
-                        const ny = gridY + dy;
-                        const gridKey = `${nx}_${ny}`;
-                        if (!placedPositions.has(gridKey)) {
-                            availablePositions.set(gridKey, { gridX: nx, gridY: ny });
-                        }
-                    });
-                });
-
-                if (availablePositions.size === 0) {
-                    logMessage("Error: No available positions. Setup failed."); break;
-                }
-
-                const posArray = Array.from(availablePositions.values());
-                const pos = posArray[Math.floor(Math.random() * posArray.length)];
-
-                if (playerUnits[currentPlayer].length > 0) {
-                    const pair = playerUnits[currentPlayer].pop();
-                    const terrainData = fixedTerrainCards[pair.terrainCardIndex];
-                    // Basic validation during placement isn't strictly needed now,
-                    // as units are hidden and terrain doesn't block placement itself.
-                    placeCard(pos.gridX, pos.gridY, currentPlayer, pair.unit, terrainData);
-                }
-
-                currentPlayer = currentPlayer === 1 ? 2 : 1;
-            }
-
-            currentPlayer = 1; // Start game with Player 1
-            logMessage("Game ready. Player 1's turn.");
             updateUI();
         }
+
+
+        // --- Placement Phase Functions ---
+
+        function selectUnitForPlacement(index, unitName) { // Accept index and name
+            if (gameState !== 'PLACEMENT') return;
+            selectedUnitIndexForPlacement = index; // Store the index
+            selectedUnitForPlacement = unitName; // Store the name
+            logMessage(`Selected Unit: ${unitName} (at index ${index})`);
+            updateUI(); // Re-render to show selection highlight
+        }
+
+        function selectTerrainForPlacement(terrainIndex) {
+            if (gameState !== 'PLACEMENT') return;
+            selectedTerrainIndexForPlacement = terrainIndex;
+            const terrainData = fixedTerrainCards[terrainIndex];
+            logMessage(`Selected Terrain: [${TERRAIN_EMOJIS[terrainData.top]}, ${TERRAIN_EMOJIS[terrainData.right]}, ${TERRAIN_EMOJIS[terrainData.bottom]}, ${TERRAIN_EMOJIS[terrainData.left]}]`);
+            updateUI(); // Re-render to show selection highlight
+        }
+
+        function handleBoardClickForPlacement(event) {
+            if (gameState !== 'PLACEMENT') return;
+
+            // Ensure a unit and terrain are selected
+            if (selectedUnitForPlacement === null || selectedTerrainIndexForPlacement === null) {
+                logMessage("Please select both a unit and a terrain card first.");
+                return;
+            }
+
+            // Calculate grid coordinates from click position relative to the board
+            const boardRect = event.currentTarget.getBoundingClientRect();
+            // Estimate card size including margin/padding for grid calculation
+            const cardWidthEstimate = 75 + 5; // card width + margin
+            const cardHeightEstimate = 105 + 5; // card height + margin
+            // Adjust click coordinates to be relative to the board's content area (including padding)
+            const clickX = event.clientX - boardRect.left;
+            const clickY = event.clientY - boardRect.top;
+
+            // This calculation is approximate and might need adjustment based on how the grid grows.
+            // Calculate grid cell based on click position relative to the board's content area
+            // Note: This calculation assumes a relatively uniform grid expansion.
+            // A more precise method might involve finding the min/max grid coords currently used.
+            // Let's try a slightly simpler calculation assuming grid starts near 0,0 relative to padding edge.
+            // We still use START_GRID_COORD as the logical center index.
+            // We need the board's padding to offset correctly.
+            const boardPadding = parseFloat(window.getComputedStyle(event.currentTarget).paddingLeft) || 0; // Assuming uniform padding, default to 0 if parsing fails
+
+            const clickedGridX = Math.floor((clickX - boardPadding) / cardWidthEstimate) + START_GRID_COORD;
+            const clickedGridY = Math.floor((clickY - boardPadding) / cardHeightEstimate) + START_GRID_COORD;
+
+            // If the click target was a placeholder, use its data attributes for precision
+            let targetGridX = clickedGridX;
+            let targetGridY = clickedGridY;
+            if (event.target.classList.contains('placement-placeholder')) {
+                 targetGridX = parseInt(event.target.dataset.gridX, 10);
+                 targetGridY = parseInt(event.target.dataset.gridY, 10);
+                 logMessage(`Clicked placeholder at (${targetGridX}, ${targetGridY})`);
+            }
+
+
+            const gridKey = `${targetGridX}_${targetGridY}`;
+
+            // --- Validate Placement Location ---
+            // Check if the target spot is one of the valid potential spots
+            const potentialSpots = new Set();
+             if (placedPositions.size === 0) {
+                 potentialSpots.add(`${START_GRID_COORD}_${START_GRID_COORD}`);
+             } else {
+                 placedPositions.forEach(posKey => {
+                     const [x, y] = posKey.split('_').map(Number);
+                     const neighbors = [
+                         `${x + 1}_${y}`, `${x - 1}_${y}`,
+                         `${x}_${y + 1}`, `${x}_${y - 1}`
+                     ];
+                     neighbors.forEach(neighborKey => {
+                         if (!placedPositions.has(neighborKey)) {
+                             potentialSpots.add(neighborKey);
+                         }
+                     });
+                 });
+             }
+
+            if (!potentialSpots.has(gridKey)) {
+                 logMessage("Invalid placement spot. Click on one of the dashed outlines.");
+                 return;
+            }
+
+            // Spot is valid and unoccupied (implicit from being in potentialSpots)
+
+            // --- Place the Card ---
+            logMessage(`Player ${currentPlayer} placing ${selectedUnitForPlacement} on terrain #${selectedTerrainIndexForPlacement + 1} at (${targetGridX}, ${targetGridY}).`);
+            const terrainData = fixedTerrainCards[selectedTerrainIndexForPlacement];
+            placeCard(targetGridX, targetGridY, currentPlayer, selectedUnitForPlacement, terrainData);
+
+            // Remove placed unit and terrain from available lists
+            // Use the stored index to remove the unit directly
+            if (selectedUnitIndexForPlacement !== null && selectedUnitIndexForPlacement < playerAvailableUnits[currentPlayer].length) {
+                 playerAvailableUnits[currentPlayer].splice(selectedUnitIndexForPlacement, 1); // Remove 1 element at the stored index
+            } else {
+                 console.error("Error: Invalid selected unit index for removal."); // Should not happen if selection is working
+            }
+
+            // Terrain indices are unique, so filter is fine here
+            playerAvailableTerrains[currentPlayer] = playerAvailableTerrains[currentPlayer].filter(tIdx => tIdx !== selectedTerrainIndexForPlacement);
+
+            // Reset selections and increment count
+            selectedUnitForPlacement = null;
+            selectedUnitIndexForPlacement = null; // Reset the index
+            selectedTerrainIndexForPlacement = null;
+            placedCardCount++;
+
+            // Check if placement phase is over
+            if (placedCardCount >= TOTAL_CARDS_TO_PLACE) {
+                gameState = 'GAMEPLAY';
+                currentPlayer = 1; // Player 1 starts the gameplay phase
+                logMessage("Placement complete! Player 1's turn to move or attack.");
+                // Remove the board click listener for placement
+                document.getElementById('board').removeEventListener('click', handleBoardClickForPlacement);
+                document.getElementById('board').style.cursor = 'default'; // Reset cursor
+            } else {
+                // Switch to the other player for the next placement
+                currentPlayer = currentPlayer === 1 ? 2 : 1;
+                logMessage(`Player ${currentPlayer}'s turn to place.`);
+            }
+
+            updateUI();
+        }
+
+
+        // --- Memo Pad Functions ---
 
         function displayMemoPadContent(player) {
             const memoPopover = document.getElementById('memo-popover');
@@ -1051,7 +1362,7 @@
         }
 
 
-        document.addEventListener("DOMContentLoaded", resetGame);
+        document.addEventListener("DOMContentLoaded", resetGame); // resetGame now initializes the placement phase
     </script>
 </body>
 
