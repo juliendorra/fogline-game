@@ -387,10 +387,21 @@
 
 
         #memo-toggle-button {
-             background-color: #6c757d;
+             /* background-color removed, will be set dynamically */
+             color: white; /* Keep text white */
+             border: none; /* Assuming it should look like other buttons */
+             padding: 8px 15px; /* Match other buttons */
+             font-size: 14px; /* Match other buttons */
+             border-radius: 4px; /* Match other buttons */
+             margin: 5px; /* Match other buttons */
+             cursor: pointer; /* Ensure cursor is pointer */
+             transition: background-color 0.2s ease; /* Add transition */
         }
         #memo-toggle-button:hover {
-             background-color: #5a6268;
+             /* Hover effect can be slightly darker version of player color,
+                or a generic effect like slight brightness change.
+                Let's use filter for a simple darken effect. */
+             filter: brightness(90%);
         }
 
     </style>
@@ -764,9 +775,13 @@
 
             const attackerCard = selectedCardIndex !== null ? board[selectedCardIndex] : null;
 
-            // Update Memo Toggle Button Text
+            // Update Memo Toggle Button Text and Color
             const memoButton = document.getElementById('memo-toggle-button');
-            if (memoButton) memoButton.textContent = `Player ${currentPlayer} Memo`;
+            if (memoButton) {
+                memoButton.textContent = `Player ${currentPlayer} Memo`;
+                // Set background color based on current player
+                memoButton.style.backgroundColor = currentPlayer === 1 ? '#4a90e2' : '#e94e77';
+            }
 
 
             board.forEach((card, i) => {
