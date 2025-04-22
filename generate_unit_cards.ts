@@ -37,6 +37,7 @@
  *   --fontSizeStats=<px>   Font size for stats (default: 20)
  *   --textColor=<hex>      Color for text (default: '#000000')
  *   --marginVertical=<px>  Vertical margin from top/bottom edge for text (default: 50)
+ *   --marginHorizontal=<px> Horizontal margin from left edge for text (default: 15)
  *
  * Example:
  * deno run --allow-read --allow-write --allow-net generate_unit_cards.ts \
@@ -59,7 +60,7 @@ const args = parse(Deno.args, {
         "bg1", "bg2", "mobileCommand", "tank", "infantry", "artillery", "specialOps",
         "out", "fontFamily", "textColor"
     ],
-    number: ["width", "height", "unitImageHeight", "fontSizeName", "fontSizeStats", "marginVertical"], // Added marginVertical
+    number: ["width", "height", "unitImageHeight", "fontSizeName", "fontSizeStats", "marginVertical", "marginHorizontal"], // Added marginHorizontal
     default: {
         bg1: "./assets/bg_player1.png",
         bg2: "./assets/bg_player2.png",
@@ -76,7 +77,8 @@ const args = parse(Deno.args, {
         fontSizeName: 24,
         fontSizeStats: 20,
         textColor: "#000000",
-        marginVertical: 50, // Default vertical margin
+        marginVertical: 50,
+        marginHorizontal: 15, // Default horizontal margin
     },
 });
 
@@ -88,7 +90,7 @@ const FONT_FAMILY = args.fontFamily;
 const FONT_SIZE_NAME = Number(args.fontSizeName);
 const FONT_SIZE_STATS = Number(args.fontSizeStats);
 const TEXT_COLOR = args.textColor;
-const TEXT_MARGIN_LEFT = 15; // Horizontal margin for left-aligned text
+const TEXT_MARGIN_LEFT = Number(args.marginHorizontal); // Horizontal margin for left-aligned text
 const TEXT_MARGIN_VERTICAL = Number(args.marginVertical); // Vertical margin from top/bottom
 
 // Unit Stats (Copied from index.html, movement rules not needed for card generation)
