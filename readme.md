@@ -71,7 +71,7 @@ Players alternate turns. On your turn:
 3.  **Resolve Combat** (if attacking):
     -   Compare your unit's **Attack** vs. the enemy unit's **Defense**.
     -   Add terrain bonus: If the terrain on the defender's edge *facing the attacker* is 🌲 Forest, the defender gets +1 Defense.
-    -   **Attacker wins ties**.
+    -   **Defender wins ties**.
 
 4.  **Remove the defeated unit**. If the attacker won, move the attacking unit into the now-empty tile.
 
