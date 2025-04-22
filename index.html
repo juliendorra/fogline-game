@@ -1,0 +1,1894 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fogline, card-based micro-wargame</title>
+    <!-- PeerJS CDN -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 10px;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #peer-controls {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #e0e0e0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            text-align: center;
+            width: 90%;
+            max-width: 1000px;
+        }
+
+        #peer-controls input {
+            padding: 5px;
+            margin: 0 5px;
+        }
+
+        #peer-controls button {
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        #peer-status {
+            font-weight: bold;
+            margin-left: 15px;
+        }
+
+        #game-area {
+            position: relative;
+            width: 100vw;
+            margin-bottom: 20px auto;
+            border: 0px solid #ccc;
+            background-color: #e8e8e8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #board {
+            display: inline-grid;
+            padding: 27.5px;
+        }
+
+        .card {
+            width: 75px;
+            /* Portrait width */
+            height: 105px;
+            /* Portrait height */
+            border: 1px solid #333;
+            border-radius: 5px;
+            position: relative;
+            /* Needed for absolute positioning of edges */
+            cursor: default;
+            /* Default cursor */
+            background-color: #fff;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            /* Pushes stats down */
+            align-items: center;
+            padding: 5px;
+            box-sizing: border-box;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            margin: 2.5px;
+            /* Space between cards */
+            overflow: hidden;
+            /* Hide overflowing edge content if any */
+        }
+
+        .card.selected {
+            border: 2px solid gold;
+            box-shadow: 0 0 10px gold;
+        }
+
+        .card.hidden {
+            background-color: #888;
+            /* Grey for hidden */
+            color: #ccc;
+        }
+
+        .card.hidden .unit-name,
+        .card.hidden .stats {
+            /* Keep terrain edges visible */
+            visibility: hidden;
+        }
+
+        .unit-name {
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 5px;
+            z-index: 1;
+            /* Above terrain edges */
+        }
+
+        .stats {
+            font-size: 12px;
+            text-align: center;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 5px;
+            z-index: 1;
+            /* Above terrain edges */
+        }
+
+        .stats span {
+            display: inline-block;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .attack {
+            background-color: #ffcccb;
+            border: 1px solid #f08080;
+        }
+
+        .defense {
+            background-color: #add8e6;
+            border: 1px solid #87ceeb;
+        }
+
+        /* --- Cursor and Hover based on Action State --- */
+        .selectable-initial {
+            cursor: pointer;
+        }
+
+        .selectable-move {
+            cursor: pointer;
+        }
+
+        .selectable-attack {
+            cursor: crosshair;
+        }
+
+        .not-selectable {
+            cursor: not-allowed;
+        }
+
+        /* Only apply hover effects if it's the player's turn */
+        body.my-turn .selectable-initial:hover,
+        body.my-turn .selectable-move:hover,
+        body.my-turn .selectable-attack:hover {
+            transform: translateY(-3px);
+            box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        /* --- Terrain Edge Display --- */
+        .terrain-edges {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            /* Don't interfere with clicks */
+            z-index: 0;
+            /* Behind unit info */
+        }
+
+        .terrain-edge {
+            position: absolute;
+            font-size: 18px;
+            /* Emoji size */
+            line-height: 1;
+            opacity: 0.8;
+            /* Slightly faded */
+        }
+
+        .edge-top {
+            top: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .edge-right {
+            top: 50%;
+            right: 2px;
+            transform: translateY(-50%);
+        }
+
+        .edge-bottom {
+            bottom: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .edge-left {
+            top: 50%;
+            left: 2px;
+            transform: translateY(-50%);
+        }
+
+        .player1 {
+            border-left: 5px solid #4a90e2;
+        }
+
+        .player2 {
+            border-left: 5px solid #e94e77;
+        }
+
+        #info,
+        #controls {
+            margin-top: 15px;
+            margin-bottom: 15px;
+            text-align: center;
+            width: 100%;
+        }
+
+        #info span {
+            margin: 0 15px;
+            font-weight: bold;
+        }
+
+        .player1-text {
+            color: #4a90e2;
+        }
+
+        .player2-text {
+            color: #e94e77;
+        }
+
+        button {
+            padding: 8px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            margin: 5px;
+        }
+
+        button:hover {
+            background-color: #4cae4c;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+
+        #defeated-units {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px dashed #aaa;
+            min-height: 120px;
+            width: 90%;
+            max-width: 1000px;
+            background-color: #f8f8f8;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            gap: 5px;
+        }
+
+        #defeated-units h4 {
+            width: 100%;
+            text-align: center;
+            margin: 0 0 10px 0;
+            color: #555;
+        }
+
+        .defeated-card {
+            width: 60px;
+            height: 90px;
+            border: 1px solid #666;
+            border-radius: 3px;
+            background-color: #ccc;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 3px;
+            box-sizing: border-box;
+            font-size: 10px;
+            position: relative;
+            /* For edges */
+        }
+
+        .defeated-card .unit-name {
+            font-size: 11px;
+            font-weight: bold;
+            margin-top: 3px;
+            z-index: 1;
+        }
+
+        .defeated-card .stats {
+            font-size: 9px;
+            margin-bottom: 3px;
+            z-index: 1;
+        }
+
+        /* Defeated cards also show edges */
+        .defeated-card .terrain-edges {
+            visibility: visible !important;
+        }
+
+        /* Override hidden */
+        .defeated-card .terrain-edge {
+            font-size: 12px;
+            opacity: 0.6;
+        }
+
+        .defeated-card .edge-top {
+            top: 1px;
+        }
+
+        .defeated-card .edge-right {
+            right: 1px;
+        }
+
+        .defeated-card .edge-bottom {
+            bottom: 1px;
+        }
+
+        .defeated-card .edge-left {
+            left: 1px;
+        }
+
+        .defeated-card.player1 {
+            border-left: 3px solid #4a90e2;
+        }
+
+        .defeated-card.player2 {
+            border-left: 3px solid #e94e77;
+        }
+
+        /* --- Memo Pad Styles --- */
+        #memo-popover {
+            position: fixed;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 220px;
+            /* Adjust width as needed */
+            max-height: 80vh;
+            /* Limit height */
+            overflow-y: auto;
+            /* Add scroll if content overflows */
+            background-color: #fdfdfd;
+            border: 1px solid #aaa;
+            border-radius: 8px;
+            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            z-index: 100;
+            /* Ensure it's above other elements */
+            display: none;
+            /* Hidden by default */
+            font-size: 12px;
+        }
+
+        #memo-popover h5 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+
+        #memo-popover ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #memo-popover li {
+            margin-bottom: 8px;
+            padding: 5px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            background-color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #memo-popover .memo-unit {
+            font-weight: bold;
+            flex-basis: 45%;
+            /* Adjust as needed */
+            text-align: left;
+        }
+
+        #memo-popover .memo-terrain {
+            flex-basis: 50%;
+            /* Adjust as needed */
+            text-align: left;
+            /* Align terrain block to left */
+            font-size: 14px;
+            /* Slightly larger emojis */
+            display: grid;
+            /* Use grid for spatial layout */
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 0px;
+            /* Adjust gap as needed */
+            width: 40px;
+            /* Fixed width for the grid */
+            height: 40px;
+            /* Fixed height for the grid */
+            place-items: center;
+            /* Center emojis in grid cells */
+            margin-right: 10px;
+            /* Space between terrain and unit */
+        }
+
+        #memo-popover .memo-terrain .memo-edge-top {
+            grid-column: 1 / 3;
+            grid-row: 1;
+        }
+
+        #memo-popover .memo-terrain .memo-edge-right {
+            grid-column: 2;
+            grid-row: 1 / 3;
+            align-self: center;
+        }
+
+        #memo-popover .memo-terrain .memo-edge-bottom {
+            grid-column: 1 / 3;
+            grid-row: 2;
+        }
+
+        #memo-popover .memo-terrain .memo-edge-left {
+            grid-column: 1;
+            grid-row: 1 / 3;
+            align-self: center;
+        }
+
+        #memo-popover .memo-unit {
+            font-weight: bold;
+            flex-basis: 50%;
+            /* Adjust as needed */
+            text-align: right;
+            /* Align unit name to right */
+        }
+
+
+        #memo-toggle-button {
+            /* background-color removed, will be set dynamically */
+            color: white;
+            /* Keep text white */
+            border: none;
+            /* Assuming it should look like other buttons */
+            padding: 8px 15px;
+            /* Match other buttons */
+            font-size: 14px;
+            /* Match other buttons */
+            border-radius: 4px;
+            /* Match other buttons */
+            margin: 5px;
+            /* Match other buttons */
+            cursor: pointer;
+            /* Ensure cursor is pointer */
+            transition: background-color 0.2s ease;
+            /* Add transition */
+        }
+
+        #memo-toggle-button:hover {
+            filter: brightness(90%);
+        }
+
+        /* --- Placement Phase UI --- */
+        #placement-controls {
+            margin-top: 10px;
+            margin-bottom: 10px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            width: 90%;
+            max-width: 1000px;
+            text-align: center;
+        }
+
+        #placement-controls h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .placement-area {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 10px;
+        }
+
+        .placement-list {
+            /* Keep hidden */
+            display: none;
+        }
+
+        /* --- Placeholder for Placement --- */
+        .placement-placeholder {
+            width: 75px;
+            height: 105px;
+            border: 2px dashed #aaa;
+            /* Dashed border */
+            border-radius: 5px;
+            background-color: rgba(200, 200, 200, 0.2);
+            /* Slightly transparent background */
+            margin: 2.5px;
+            /* Match card margin */
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            color: #aaa;
+            cursor: copy;
+            /* Indicate placement action */
+            grid-column: var(--grid-x);
+            /* Use CSS variables for position */
+            grid-row: var(--grid-y);
+        }
+
+        /* Only show hover if it's the player's turn */
+        body.my-turn .placement-placeholder:hover {
+            background-color: rgba(180, 180, 180, 0.4);
+            border-color: #888;
+        }
+
+        /* --- Placement Phase Visual Cards --- */
+        .placement-card-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            /* 4 columns */
+            gap: 8px;
+            /* Space between cards */
+            padding: 10px;
+            border: 1px solid #ddd;
+            background-color: #fff;
+            border-radius: 5px;
+            min-height: 150px;
+            /* Ensure minimum height */
+            max-width: 380px;
+            /* Adjust based on card size + gap */
+            margin: 0 auto;
+            /* Center the grid if container is wider */
+        }
+
+        .placement-unit-card,
+        .placement-terrain-card {
+            width: 75px;
+            /* Match game card width */
+            height: 105px;
+            /* Match game card height */
+            border: 1px solid #aaa;
+            border-radius: 5px;
+            background-color: #fff;
+            /* Match game card background */
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px;
+            box-sizing: border-box;
+            position: relative;
+            /* For potential absolute elements */
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+            font-size: 11px;
+            /* Smaller base font */
+            box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Only show hover if it's the player's turn */
+        body.my-turn .placement-unit-card:hover,
+        body.my-turn .placement-terrain-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .placement-unit-card.selected-for-placement,
+        .placement-terrain-card.selected-for-placement {
+            border: 2px solid #007bff;
+            /* Blue selection border */
+            box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
+            background-color: #e7f3ff;
+            /* Light blue background */
+        }
+
+        .placement-unit-card .unit-name {
+            font-weight: bold;
+            font-size: 13px;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .placement-unit-card .stats {
+            font-size: 11px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 5px;
+        }
+
+        .placement-unit-card .stats .attack,
+        .placement-unit-card .stats .defense {
+            padding: 1px 3px;
+            border-radius: 2px;
+            border: 1px solid #ccc;
+        }
+
+        .placement-unit-card .stats .attack {
+            background-color: #ffdddd;
+            border-color: #ffaaaa;
+        }
+
+        .placement-unit-card .stats .defense {
+            background-color: #ddeeff;
+            border-color: #aaddff;
+        }
+
+
+        /* Use absolute positioning for edges, similar to main card */
+        .placement-terrain-card .terrain-edges {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            /* Don't interfere with clicks */
+            z-index: 0;
+            /* Behind potential future content */
+        }
+
+        .placement-terrain-card .terrain-edge {
+            /* Common style for edges */
+            position: absolute;
+            font-size: 18px;
+            /* Match main card emoji size */
+            line-height: 1;
+            opacity: 0.8;
+            /* Match main card opacity */
+        }
+
+        /* Individual edge positioning, matching .card .terrain-edge */
+        .placement-terrain-card .edge-top {
+            top: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .placement-terrain-card .edge-right {
+            top: 50%;
+            right: 2px;
+            transform: translateY(-50%);
+        }
+
+        .placement-terrain-card .edge-bottom {
+            bottom: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .placement-terrain-card .edge-left {
+            top: 50%;
+            left: 2px;
+            transform: translateY(-50%);
+        }
+    </style>
+</head>
+
+<body>
+    <h2 style="text-align:center;">Fogline, card-based micro-wargame</h2>
+
+    <!-- PeerJS Controls -->
+    <div id="peer-controls">
+        Your Peer ID: <strong id="my-peer-id">Waiting...</strong> |
+        Connect to Peer ID: <input type="text" id="peer-id-input" placeholder="Enter Peer ID">
+        <button id="connect-button" onclick="connectToPeer()">Connect</button>
+        <span id="peer-status">Not Connected</span>
+    </div>
+
+    <!-- Memo Pad Popover -->
+    <div id="memo-popover">
+        <!-- Content generated by JS -->
+    </div>
+
+    <div id="info">Connecting...</div>
+
+    <!-- Placement Phase Controls (hidden initially) -->
+    <div id="placement-controls" style="display: none;">
+        <h4 id="placement-title">Placement Phase</h4>
+        <div class="placement-area">
+            <div>
+                <h5>Available Units</h5>
+                <div id="placement-units-area" class="placement-card-grid">
+                    <!-- Unit cards will be generated here -->
+                </div>
+            </div>
+            <div>
+                <h5>Available Terrains</h5>
+                <div id="placement-terrains-area" class="placement-card-grid">
+                    <!-- Terrain cards will be generated here -->
+                </div>
+            </div>
+        </div>
+        <p id="placement-instructions">Select one unit and one terrain, then click an empty, valid spot on the board.</p>
+    </div>
+
+    <div id="game-area">
+        <div id="board"></div>
+    </div>
+
+    <div id="controls">
+        <button onclick="resetGame()">Reset Game (Requires Reconnect)</button>
+        <button id="memo-toggle-button" onclick="toggleMemoPad()" disabled>Show Memo Pad</button>
+        <span id="message-log" style="margin-left: 20px; color: #333; font-style: italic;"></span>
+    </div>
+
+    <div id="defeated-units">
+        <h4>Defeated Units</h4>
+    </div>
+
+    <script>
+        // --- PeerJS Setup ---
+        let peer = null;
+        let conn = null;
+        let myPeerId = null;
+        let localPlayerRole = null; // 1 (Host/Initiator) or 2 (Guest/Receiver)
+
+        function initializePeer() {
+            peer = new Peer(); // Use PeerJS cloud server by default
+
+            peer.on('open', id => {
+                console.log('My PeerJS ID is:', id);
+                myPeerId = id;
+                document.getElementById('my-peer-id').textContent = id;
+                document.getElementById('peer-status').textContent = 'Waiting for connection...';
+            });
+
+            peer.on('connection', incomingConn => {
+                console.log('Incoming connection from:', incomingConn.peer);
+                if (conn && conn.open) {
+                    console.log('Already connected, rejecting new connection.');
+                    incomingConn.close();
+                    return;
+                }
+                conn = incomingConn;
+                localPlayerRole = 2; // The receiver is Player 2
+                setupConnectionEvents();
+            });
+
+            peer.on('disconnected', () => {
+                console.log('PeerJS disconnected.');
+                logMessage('Disconnected from PeerJS server. Please refresh.');
+                document.getElementById('peer-status').textContent = 'Disconnected';
+                // Attempt to reconnect? Might be complex. Refresh is simpler for now.
+                // peer.reconnect();
+            });
+
+            peer.on('close', () => {
+                console.log('PeerJS connection closed.');
+                logMessage('PeerJS connection closed. Please refresh.');
+                conn = null;
+                document.getElementById('peer-status').textContent = 'Closed';
+            });
+
+            peer.on('error', err => {
+                console.error('PeerJS error:', err);
+                logMessage(`PeerJS Error: ${err.type}`);
+                document.getElementById('peer-status').textContent = `Error: ${err.type}`;
+            });
+        }
+
+        function connectToPeer() {
+            if (conn && conn.open) {
+                console.log('Already connected.');
+                return;
+            }
+            const peerIdInput = document.getElementById('peer-id-input').value.trim();
+            if (!peerIdInput) {
+                logMessage('Please enter a Peer ID to connect to.');
+                return;
+            }
+            if (peerIdInput === myPeerId) {
+                logMessage('Cannot connect to yourself.');
+                return;
+            }
+
+            console.log('Attempting to connect to:', peerIdInput);
+            document.getElementById('peer-status').textContent = `Connecting to ${peerIdInput}...`;
+            conn = peer.connect(peerIdInput, { reliable: true });
+            localPlayerRole = 1; // The initiator is Player 1
+            setupConnectionEvents();
+        }
+
+        function setupConnectionEvents() {
+            if (!conn) return;
+
+            conn.on('open', () => {
+                console.log('Connection established with:', conn.peer);
+                document.getElementById('peer-status').textContent = `Connected to ${conn.peer}`;
+                document.getElementById('peer-id-input').disabled = true;
+                document.getElementById('connect-button').disabled = true;
+                logMessage(`Connected! You are Player ${localPlayerRole}.`);
+
+                // Player 1 (Host) initiates the game setup
+                if (localPlayerRole === 1) {
+                    resetGame(); // Host generates setup and sends it
+                } else {
+                    logMessage("Waiting for Player 1 to start the game...");
+                }
+                document.getElementById('memo-toggle-button').disabled = false; // Enable memo pad after connection
+            });
+
+            conn.on('data', data => {
+                console.log('Received data:', data);
+                handleReceivedData(data);
+            });
+
+            conn.on('close', () => {
+                console.log('Connection closed with:', conn.peer);
+                logMessage('Opponent disconnected.');
+                document.getElementById('peer-status').textContent = 'Disconnected';
+                document.getElementById('peer-id-input').disabled = false;
+                document.getElementById('connect-button').disabled = false;
+                document.getElementById('memo-toggle-button').disabled = true;
+                conn = null;
+                // Optionally reset the game board or show a message
+                gameState = 'DISCONNECTED';
+                updateUI();
+            });
+
+            conn.on('error', err => {
+                console.error('Connection error:', err);
+                logMessage(`Connection Error: ${err.type}`);
+                document.getElementById('peer-status').textContent = `Connection Error`;
+            });
+        }
+
+        function sendData(type, payload) {
+            if (conn && conn.open) {
+                const message = { type, payload };
+                console.log('Sending data:', message);
+                conn.send(message);
+            } else {
+                console.error('Cannot send data: No open connection.');
+                logMessage('Error: Not connected to opponent.');
+            }
+        }
+
+        // --- Game Constants and Variables ---
+        let board = []; // Stores card objects { id, unit, terrain: {top, right, bottom, left}, hidden, owner, gridX, gridY, element }
+        let currentPlayer = 1;
+        let playerUnits = {}; // { 1: [{unit, terrainCardIndex}, ...], 2: [...] } // Not used directly anymore, setup sent by P1
+        let placedPositions = new Set(); // Store "x_y" strings
+        let selectedCardIndex = null; // Index in the board array for gameplay phase
+        let defeatedUnits = []; // Stores { unit, terrain: {top, right, bottom, left}, owner } of defeated units
+        let nextCardId = 0; // Unique ID for each card
+        let initialPlayerPairings = { 1: [], 2: [] }; // To store initial setup for memo pad (set by P1)
+        let isResolvingAttack = false; // Flag to prevent clicks during attack resolution
+
+        // --- Game State & Placement Variables ---
+        let gameState = 'CONNECTING'; // 'CONNECTING', 'PLACEMENT', 'GAMEPLAY', 'GAMEOVER', 'DISCONNECTED'
+        let playerAvailableUnits = { 1: [], 2: [] }; // Set during setup message
+        let playerAvailableTerrains = { 1: [], 2: [] }; // Stores terrain indices, set during setup message
+        let selectedUnitForPlacement = null; // Name of the selected unit
+        let selectedUnitIndexForPlacement = null; // Index of the selected unit in the available list
+        let selectedTerrainIndexForPlacement = null;
+        let placedCardPairCount = 0;
+        const TOTAL_CARD_PAIRS_TO_PLACE = 16;
+
+        const START_GRID_COORD = 10; // Start placing cards around grid cell 10,10
+        // Terrain Types & Emojis
+        const TERRAIN_TYPES = {
+            PLAINS: 'Plains',
+            FOREST: 'Forest',
+            MOUNTAIN: 'Mountain'
+        };
+        const TERRAIN_EMOJIS = {
+            [TERRAIN_TYPES.PLAINS]: '🏞️',
+            [TERRAIN_TYPES.FOREST]: '🌲',
+            [TERRAIN_TYPES.MOUNTAIN]: '⛰️'
+        };
+
+        // Unit Stats (Movement based on terrain *type*)
+        const unitStats = {
+            'Mobile Command': { attack: 1, defense: 2, quantity: 1, canTraverse: [TERRAIN_TYPES.PLAINS] },
+            'Tank': { attack: 4, defense: 4, quantity: 2, canTraverse: [TERRAIN_TYPES.PLAINS] },
+            'Infantry': { attack: 3, defense: 3, quantity: 3, canTraverse: [TERRAIN_TYPES.PLAINS, TERRAIN_TYPES.FOREST, TERRAIN_TYPES.MOUNTAIN] },
+            'Artillery': { attack: 5, defense: 1, quantity: 1, canTraverse: [TERRAIN_TYPES.PLAINS] },
+            'Special Ops': { attack: 3, defense: 1, quantity: 1, canTraverse: [TERRAIN_TYPES.PLAINS, TERRAIN_TYPES.FOREST, TERRAIN_TYPES.MOUNTAIN] }
+        };
+
+        // Terrain Rules (Defense bonus based on type)
+        const terrainRules = {
+            [TERRAIN_TYPES.PLAINS]: { defenseBonus: 0 },
+            [TERRAIN_TYPES.FOREST]: { defenseBonus: 1 },
+            [TERRAIN_TYPES.MOUNTAIN]: { defenseBonus: 0 }
+        };
+
+        // The 8 Fixed Terrain Cards (Top, Right, Bottom, Left)
+        // IMPORTANT: Keep this consistent across both clients
+        const fixedTerrainCards = [
+            { top: TERRAIN_TYPES.PLAINS, right: TERRAIN_TYPES.FOREST, bottom: TERRAIN_TYPES.PLAINS, left: TERRAIN_TYPES.FOREST },
+            { top: TERRAIN_TYPES.PLAINS, right: TERRAIN_TYPES.MOUNTAIN, bottom: TERRAIN_TYPES.PLAINS, left: TERRAIN_TYPES.MOUNTAIN },
+            { top: TERRAIN_TYPES.FOREST, right: TERRAIN_TYPES.PLAINS, bottom: TERRAIN_TYPES.FOREST, left: TERRAIN_TYPES.PLAINS },
+            { top: TERRAIN_TYPES.MOUNTAIN, right: TERRAIN_TYPES.PLAINS, bottom: TERRAIN_TYPES.MOUNTAIN, left: TERRAIN_TYPES.PLAINS },
+            { top: TERRAIN_TYPES.FOREST, right: TERRAIN_TYPES.FOREST, bottom: TERRAIN_TYPES.PLAINS, left: TERRAIN_TYPES.MOUNTAIN },
+            { top: TERRAIN_TYPES.MOUNTAIN, right: TERRAIN_TYPES.MOUNTAIN, bottom: TERRAIN_TYPES.PLAINS, left: TERRAIN_TYPES.FOREST },
+            { top: TERRAIN_TYPES.FOREST, right: TERRAIN_TYPES.MOUNTAIN, bottom: TERRAIN_TYPES.FOREST, left: TERRAIN_TYPES.PLAINS },
+            { top: TERRAIN_TYPES.MOUNTAIN, right: TERRAIN_TYPES.FOREST, bottom: TERRAIN_TYPES.MOUNTAIN, left: TERRAIN_TYPES.PLAINS }
+        ];
+
+        function getUnitList() {
+            const units = [];
+            for (const type in unitStats) {
+                for (let i = 0; i < unitStats[type].quantity; i++) {
+                    units.push(type);
+                }
+            }
+            return units; // Should be 8 units total
+        }
+
+        // Fisher-Yates Shuffle
+        function shuffle(array) {
+            let newArray = [...array]; // Create a copy to avoid modifying the original
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+
+        // --- Core Game Logic Functions (Modified for PeerJS) ---
+
+        function resetGame() {
+            // Only Player 1 should initiate the reset and send setup
+            if (localPlayerRole !== 1) {
+                logMessage("Waiting for Player 1 to reset the game.");
+                return;
+            }
+            if (!conn || !conn.open) {
+                logMessage("Cannot reset game: Not connected.");
+                return;
+            }
+
+            logMessage("Resetting game and sending setup...");
+
+            // Reset local state first
+            board = [];
+            placedPositions.clear();
+            selectedCardIndex = null;
+            isResolvingAttack = false;
+            defeatedUnits = [];
+            nextCardId = 0;
+            document.getElementById('board').innerHTML = '';
+            document.getElementById('defeated-units').innerHTML = '<h4>Defeated Units</h4>';
+            document.getElementById('memo-popover').style.display = 'none';
+
+            // Generate shuffled lists for BOTH players
+            const p1Units = shuffle(getUnitList());
+            const p2Units = shuffle(getUnitList());
+            const p1Terrains = shuffle([...Array(8).keys()]);
+            const p2Terrains = shuffle([...Array(8).keys()]);
+
+            // Store Player 1's lists locally
+            playerAvailableUnits = { 1: p1Units, 2: [] }; // P2's list will be empty until setup received if P1
+            playerAvailableTerrains = { 1: p1Terrains, 2: [] };
+
+            // Prepare initial pairings for memo pad (for both players)
+            const p1InitialPairings = p1Units.map((unit, i) => ({ unit: unit, terrain: fixedTerrainCards[p1Terrains[i]] }));
+            const p2InitialPairings = p2Units.map((unit, i) => ({ unit: unit, terrain: fixedTerrainCards[p2Terrains[i]] }));
+            p1InitialPairings.sort((a, b) => a.unit.localeCompare(b.unit));
+            p2InitialPairings.sort((a, b) => a.unit.localeCompare(b.unit));
+
+            // Store both pairings locally for Player 1
+            initialPlayerPairings = { 1: p1InitialPairings, 2: p2InitialPairings };
+
+            // Send setup data to Player 2
+            const setupData = {
+                player2Units: p2Units,
+                player2Terrains: p2Terrains,
+                player1InitialPairings: p1InitialPairings, // Send P1's pairings for P2's memo
+                player2InitialPairings: p2InitialPairings  // Send P2's pairings for P2's memo
+            };
+            sendData('setup', setupData);
+
+            // Complete local setup for Player 1
+            gameState = 'PLACEMENT';
+            currentPlayer = 1; // Player 1 starts placement
+            placedCardPairCount = 0;
+            selectedUnitForPlacement = null;
+            selectedUnitIndexForPlacement = null;
+            selectedTerrainIndexForPlacement = null;
+
+            // Add the board click listener for placement
+            const boardDiv = document.getElementById('board');
+            boardDiv.removeEventListener('click', handleBoardClickForPlacement); // Remove previous if any
+            boardDiv.addEventListener('click', handleBoardClickForPlacement);
+
+            logMessage("Setup complete. Player 1's turn to place.");
+            updateUI();
+        }
+
+        function applySetup(setupData) {
+            // This is called on Player 2 when receiving the 'setup' message
+            logMessage("Received game setup from Player 1.");
+
+            // Reset local state
+            board = [];
+            placedPositions.clear();
+            selectedCardIndex = null;
+            isResolvingAttack = false;
+            defeatedUnits = [];
+            nextCardId = 0;
+            document.getElementById('board').innerHTML = '';
+            document.getElementById('defeated-units').innerHTML = '<h4>Defeated Units</h4>';
+            document.getElementById('memo-popover').style.display = 'none';
+
+            // Store Player 2's lists
+            playerAvailableUnits = { 1: [], 2: setupData.player2Units }; // P1 list is empty for P2
+            playerAvailableTerrains = { 1: [], 2: setupData.player2Terrains };
+
+            // Store initial pairings for memo pad (received from P1)
+            initialPlayerPairings = {
+                1: setupData.player1InitialPairings,
+                2: setupData.player2InitialPairings
+            };
+
+            gameState = 'PLACEMENT';
+            currentPlayer = 1; // Player 1 starts placement
+            placedCardPairCount = 0;
+            selectedUnitForPlacement = null;
+            selectedUnitIndexForPlacement = null;
+            selectedTerrainIndexForPlacement = null;
+
+            // Add the board click listener for placement (but it will be disabled if not current player)
+            const boardDiv = document.getElementById('board');
+            boardDiv.removeEventListener('click', handleBoardClickForPlacement); // Remove previous if any
+            boardDiv.addEventListener('click', handleBoardClickForPlacement);
+
+            logMessage("Setup complete. Waiting for Player 1 to place.");
+            updateUI();
+        }
+
+
+        // Place card locally (called by both players after placement action)
+        function placeCard(gridX, gridY, owner, unit, terrainData, cardIdToUse = null) {
+            const cardId = cardIdToUse !== null ? cardIdToUse : nextCardId++; // Use provided ID or generate new
+            if (cardIdToUse === null && localPlayerRole === 2) {
+                // Player 2 should always receive the ID from Player 1 to stay in sync
+                console.error("Player 2 trying to generate card ID!");
+                // Potentially request sync or handle error
+            }
+            if (cardIdToUse !== null && cardIdToUse >= nextCardId) {
+                nextCardId = cardIdToUse + 1; // Ensure next generated ID is higher
+            }
+
+            const card = { id: cardId, unit, terrain: terrainData, hidden: true, owner, gridX, gridY, element: null };
+            board.push(card);
+            const gridKey = `${gridX}_${gridY}`;
+            placedPositions.add(gridKey);
+
+            const boardDiv = document.getElementById('board');
+            const cardDiv = document.createElement('div');
+            cardDiv.className = `card hidden player${owner}`;
+            cardDiv.style.gridColumn = gridX;
+            cardDiv.style.gridRow = gridY;
+            cardDiv.dataset.id = cardId;
+            // Only add click handler if the game is in gameplay phase
+            if (gameState === 'GAMEPLAY') {
+                cardDiv.onclick = () => handleCardClick(cardId);
+            }
+
+
+            cardDiv.innerHTML = `
+                <div class="terrain-edges">
+                    <span class="terrain-edge edge-top">${TERRAIN_EMOJIS[terrainData.top]}</span>
+                    <span class="terrain-edge edge-right">${TERRAIN_EMOJIS[terrainData.right]}</span>
+                    <span class="terrain-edge edge-bottom">${TERRAIN_EMOJIS[terrainData.bottom]}</span>
+                    <span class="terrain-edge edge-left">${TERRAIN_EMOJIS[terrainData.left]}</span>
+                </div>
+                <div class="unit-name">${unit || '?'}</div>
+                <div class="stats">
+                    <span class="attack">A: ?</span>
+                    <span class="defense">D: ?</span>
+                </div>
+            `;
+
+            boardDiv.appendChild(cardDiv);
+            card.element = cardDiv;
+            return card;
+        }
+
+        function applyPlacement(data) {
+            const { owner, unitName, terrainIndex, gridX, gridY, nextPlayer, cardId } = data;
+
+            logMessage(`Player ${owner} placed ${unitName} on terrain #${terrainIndex + 1} at (${gridX}, ${gridY}).`);
+            const terrainData = fixedTerrainCards[terrainIndex];
+
+            // Place the card locally using the received data (including the cardId)
+            placeCard(gridX, gridY, owner, unitName, terrainData, cardId);
+
+            // Remove placed unit and terrain from the *correct* player's available lists locally
+            // Find the unit by name in the owner's list
+            const unitList = playerAvailableUnits[owner];
+            const unitIdxToRemove = unitList.findIndex(u => u === unitName); // Find first match
+            if (unitIdxToRemove !== -1) {
+                unitList.splice(unitIdxToRemove, 1);
+            } else {
+                console.error(`Could not find unit ${unitName} for player ${owner} to remove.`);
+            }
+
+            // Remove terrain by index
+            playerAvailableTerrains[owner] = playerAvailableTerrains[owner].filter(tIdx => tIdx !== terrainIndex);
+
+            // Update local game state
+            placedCardPairCount++;
+            currentPlayer = nextPlayer;
+
+            // Check if placement phase is over
+            if (placedCardPairCount >= TOTAL_CARD_PAIRS_TO_PLACE) {
+                gameState = 'GAMEPLAY';
+                logMessage("Placement complete! Player 1's turn to move or attack.");
+                // Remove the board click listener for placement
+                document.getElementById('board').removeEventListener('click', handleBoardClickForPlacement);
+                // Add card click listeners for gameplay
+                board.forEach(card => {
+                    if (card.element) {
+                        card.element.onclick = () => handleCardClick(card.id);
+                    }
+                });
+            } else {
+                logMessage(`Player ${currentPlayer}'s turn to place.`);
+            }
+
+            // Reset local selections (relevant for the player who just placed)
+            selectedUnitForPlacement = null;
+            selectedUnitIndexForPlacement = null;
+            selectedTerrainIndexForPlacement = null;
+
+            updateUI();
+        }
+
+        function applyReveal(data) {
+            const { cardId, unitName } = data;
+            const cardIndex = findCardIndexById(cardId);
+            if (cardIndex === -1) return;
+            const card = board[cardIndex];
+            if (card.hidden) {
+                card.hidden = false;
+                logMessage(`Player ${card.owner} revealed ${unitName}.`);
+                updateUI(); // Update to show the revealed unit
+            }
+        }
+
+        function applyMove(data) {
+            const { attackerCardId, targetCardId, nextPlayer } = data;
+            const attackerCardIndex = findCardIndexById(attackerCardId);
+            const targetCardIndex = findCardIndexById(targetCardId);
+
+            if (attackerCardIndex === -1 || targetCardIndex === -1) {
+                console.error("Invalid card ID received for move.");
+                return;
+            }
+
+            const attackerCard = board[attackerCardIndex];
+            const targetCard = board[targetCardIndex];
+
+            const directionInfo = getDirectionInfo(attackerCard, targetCard);
+            const entryTerrainType = targetCard.terrain[directionInfo.opposite];
+
+            logMessage(`Player ${attackerCard.owner} moved ${attackerCard.unit} via ${entryTerrainType}.`);
+
+            // Update board state - Data moves
+            targetCard.unit = attackerCard.unit;
+            targetCard.owner = attackerCard.owner;
+            targetCard.hidden = false; // Moved unit is revealed
+
+            attackerCard.unit = null;
+            attackerCard.owner = null;
+            attackerCard.hidden = true; // Previous spot becomes empty/hidden
+
+            selectedCardIndex = null; // Deselect on both clients
+            currentPlayer = nextPlayer;
+            isResolvingAttack = false; // Ensure flag is reset
+
+            updateUI();
+        }
+
+        function applyAttackResult(data) {
+            const { winnerCardId, loserCardId, defeatedUnitData, attackerMoved, nextPlayer, gameOver, winMessage } = data;
+
+            const winnerCardIndex = findCardIndexById(winnerCardId);
+            const loserCardIndex = findCardIndexById(loserCardId);
+
+            if (winnerCardIndex === -1 || loserCardIndex === -1) {
+                console.error("Invalid card ID received for attack result.");
+                return; // Or request resync
+            }
+
+            const winnerCard = board[winnerCardIndex];
+            const loserCard = board[loserCardIndex];
+
+            logMessage(`Combat resolved: ${winnerCard.unit} defeats ${loserCard.unit}.`);
+
+            // Add loser to defeated units list
+            defeatedUnits.push(defeatedUnitData);
+
+            // Update board state based on result
+            if (attackerMoved) {
+                // Attacker won and moved into loser's spot
+                loserCard.unit = winnerCard.unit; // Winner's unit data moves
+                loserCard.owner = winnerCard.owner;
+                loserCard.hidden = false;
+
+                winnerCard.unit = null; // Original spot becomes empty
+                winnerCard.owner = null;
+                winnerCard.hidden = true;
+            } else {
+                // Defender won, attacker is removed
+                loserCard.unit = null; // Loser's spot becomes empty
+                loserCard.owner = null;
+                loserCard.hidden = true;
+
+                winnerCard.hidden = false; // Winner remains revealed
+            }
+
+            selectedCardIndex = null; // Deselect on both clients
+            isResolvingAttack = false; // Unlock UI
+
+            if (gameOver) {
+                gameState = 'GAMEOVER';
+                logMessage(winMessage);
+            } else {
+                currentPlayer = nextPlayer;
+            }
+
+            updateUI();
+        }
+
+
+        function findCardIndexById(id) {
+            return board.findIndex(card => card && card.id === id);
+        }
+        function findCardById(id) {
+            return board.find(card => card && card.id === id);
+        }
+        function findCardByGrid(gridX, gridY) {
+            return board.find(card => card && card.gridX === gridX && card.gridY === gridY);
+        }
+
+        function getDirectionInfo(card1, card2) {
+            if (!card1 || !card2) return null;
+            const dx = card2.gridX - card1.gridX;
+            const dy = card2.gridY - card1.gridY;
+
+            if (dx === 1 && dy === 0) return { direction: 'right', opposite: 'left' };
+            if (dx === -1 && dy === 0) return { direction: 'left', opposite: 'right' };
+            if (dx === 0 && dy === 1) return { direction: 'bottom', opposite: 'top' }; // Grid Y increases downwards
+            if (dx === 0 && dy === -1) return { direction: 'top', opposite: 'bottom' }; // Grid Y decreases upwards
+            return null; // Not adjacent or same card
+        }
+
+        function canUnitTraverse(unitName, terrainType) {
+            if (!unitName || !terrainType) return false;
+            const stats = unitStats[unitName];
+            return stats && stats.canTraverse.includes(terrainType);
+        }
+
+        // --- Event Handlers (Modified for PeerJS) ---
+
+        function handleCardClick(cardId) {
+            if (gameState !== 'GAMEPLAY' || isResolvingAttack) return;
+            if (currentPlayer !== localPlayerRole) {
+                logMessage("It's not your turn.");
+                return;
+            }
+
+            const clickedCardIndex = findCardIndexById(cardId);
+            if (clickedCardIndex === -1) return;
+            const clickedCard = board[clickedCardIndex];
+
+            logMessage(""); // Clear previous message
+
+            if (selectedCardIndex === null) {
+                // --- Selecting a unit ---
+                if (clickedCard.owner !== currentPlayer) {
+                    logMessage("Cannot select opponent's card."); return;
+                }
+                if (!clickedCard.unit) {
+                    logMessage("Cannot select an empty space."); return;
+                }
+
+                if (clickedCard.hidden) {
+                    // Reveal locally first
+                    clickedCard.hidden = false;
+                    logMessage(`You revealed ${clickedCard.unit}.`);
+                    // Send reveal action to peer
+                    sendData('reveal', { cardId: clickedCard.id, unitName: clickedCard.unit });
+                }
+
+                selectedCardIndex = clickedCardIndex;
+                // Update UI locally immediately for responsiveness
+                updateUI();
+
+            } else {
+                // --- Target selected ---
+                const attackerCard = board[selectedCardIndex];
+
+                if (clickedCardIndex === selectedCardIndex) { // Deselecting
+                    selectedCardIndex = null;
+                    logMessage("Card deselected.");
+                    updateUI();
+                    return;
+                }
+
+                const directionInfo = getDirectionInfo(attackerCard, clickedCard);
+                if (!directionInfo) {
+                    logMessage("Target is not adjacent."); return;
+                }
+
+                // Check Movement Legality
+                const entryTerrainType = clickedCard.terrain[directionInfo.opposite];
+                if (!canUnitTraverse(attackerCard.unit, entryTerrainType)) {
+                    logMessage(`${attackerCard.unit} cannot enter via ${entryTerrainType} (${directionInfo.opposite} edge of target).`);
+                    return;
+                }
+
+                // Process Action: Move or Attack
+                if (clickedCard.owner === currentPlayer) {
+                    logMessage("Cannot move/attack your own unit."); return;
+                }
+
+                const nextPlayer = currentPlayer === 1 ? 2 : 1;
+
+                if (!clickedCard.unit) {
+                    // --- Moving to empty adjacent tile ---
+                    logMessage(`Moving ${attackerCard.unit} via ${entryTerrainType}...`);
+                    // Send move action
+                    sendData('move', {
+                        attackerCardId: attackerCard.id,
+                        targetCardId: clickedCard.id,
+                        nextPlayer: nextPlayer
+                    });
+                    // Apply move locally (will also be applied on receiver)
+                    applyMove({ attackerCardId: attackerCard.id, targetCardId: clickedCard.id, nextPlayer: nextPlayer });
+
+                } else {
+                    // --- Attacking an enemy unit ---
+                    logMessage(`Attacking ${clickedCard.unit} with ${attackerCard.unit}...`);
+                    isResolvingAttack = true; // Lock UI locally
+
+                    // Reveal defender locally if hidden (peer will reveal on their side too)
+                    if (clickedCard.hidden) {
+                        clickedCard.hidden = false;
+                        logMessage(`Revealed defender: ${clickedCard.unit}.`);
+                        // Send reveal action for the defender
+                        sendData('reveal', { cardId: clickedCard.id, unitName: clickedCard.unit });
+                        updateUI(); // Show revealed defender locally
+                    }
+
+                    // Resolve attack locally first to determine outcome
+                    const attackResultData = resolveAttackLocally(selectedCardIndex, clickedCardIndex, nextPlayer);
+
+                    // Send the *result* of the attack to the peer
+                    sendData('attackResult', attackResultData);
+
+                    // Apply the result locally after a short delay (simulates network + animation)
+                    // Note: applyAttackResult handles the UI update and state changes
+                    setTimeout(() => {
+                        applyAttackResult(attackResultData);
+                        // isResolvingAttack is set to false within applyAttackResult
+                    }, 500); // Shorter delay as resolution is deterministic
+                }
+                // Don't update UI immediately here for attack, wait for applyAttackResult
+            }
+        }
+
+        function resolveAttackLocally(attackerIndex, defenderIndex, nextPlayer) {
+            // This function calculates the outcome but DOES NOT modify the board state directly.
+            // It returns the data needed for applyAttackResult.
+            const attackerCard = board[attackerIndex];
+            const defenderCard = board[defenderIndex];
+
+            // Basic validation (should ideally not fail here)
+            if (!attackerCard || !attackerCard.unit || !defenderCard || !defenderCard.unit) {
+                console.error("Resolve attack locally failed: unit missing.");
+                // Return a dummy result or handle error
+                return { /* error state */ };
+            }
+
+            const attackerStats = unitStats[attackerCard.unit];
+            const defenderStats = unitStats[defenderCard.unit];
+            const directionInfo = getDirectionInfo(attackerCard, defenderCard);
+            const defenseEdgeTerrain = defenderCard.terrain[directionInfo.opposite];
+            const terrainBonus = terrainRules[defenseEdgeTerrain]?.defenseBonus || 0;
+            const attackValue = attackerStats.attack;
+            const defenseValue = defenderStats.defense + terrainBonus;
+
+            console.log(`Local Resolution: ${attackerCard.unit} (A:${attackValue}) vs ${defenderCard.unit} (D:${defenderStats.defense} + ${terrainBonus} Bonus = ${defenseValue})`);
+
+            let winnerCard, loserCard, attackerWins, attackerMoved;
+            let defeatedUnitData = null;
+
+            attackerWins = attackValue > defenseValue; // Defender wins ties
+
+            if (attackerWins) {
+                winnerCard = attackerCard;
+                loserCard = defenderCard;
+                attackerMoved = true; // Attacker moves into the space
+                console.log(`Local Resolution: Attacker wins!`);
+            } else { // Defender wins
+                winnerCard = defenderCard;
+                loserCard = attackerCard;
+                attackerMoved = false; // Attacker is removed, defender stays
+                console.log(`Local Resolution: Defender wins!`);
+            }
+
+            defeatedUnitData = { unit: loserCard.unit, terrain: loserCard.terrain, owner: loserCard.owner };
+
+            // Check for win conditions based on the *potential* outcome
+            const commandUnit = 'Mobile Command';
+            let gameOver = false;
+            let winMessage = "";
+
+            // Simulate board state *after* this combat resolution
+            const loserOwner = loserCard.owner;
+            const loserIsCommand = loserCard.unit === commandUnit;
+
+            if (loserIsCommand) {
+                gameOver = true;
+                winMessage = `Player ${winnerCard.owner} wins by capturing the Mobile Command!`;
+            } else {
+                // Count remaining non-command units for the loser *after* this loss
+                const remainingUnitsLoser = board.filter(c =>
+                    c && c.owner === loserOwner && c.unit && c.unit !== commandUnit && c.id !== loserCard.id // Exclude the unit being defeated
+                ).length;
+                const commandLoserExists = board.some(c => c && c.unit === commandUnit && c.owner === loserOwner && c.id !== loserCard.id); // Check if command still exists
+
+                if (remainingUnitsLoser === 0 && commandLoserExists) {
+                    gameOver = true;
+                    winMessage = `Player ${winnerCard.owner} wins by eliminating all other movable units!`;
+                }
+            }
+
+
+            return {
+                winnerCardId: winnerCard.id,
+                loserCardId: loserCard.id,
+                defeatedUnitData: defeatedUnitData,
+                attackerMoved: attackerMoved,
+                nextPlayer: gameOver ? currentPlayer : nextPlayer, // If game over, turn doesn't switch
+                gameOver: gameOver,
+                winMessage: winMessage
+            };
+        }
+
+
+        function handleBoardClickForPlacement(event) {
+            if (gameState !== 'PLACEMENT') return;
+            if (currentPlayer !== localPlayerRole) {
+                logMessage("It's not your turn to place.");
+                return;
+            }
+            if (!conn || !conn.open) {
+                logMessage("Not connected to opponent.");
+                return;
+            }
+
+            // Ensure a unit and terrain are selected
+            if (selectedUnitForPlacement === null || selectedTerrainIndexForPlacement === null) {
+                logMessage("Please select both a unit and a terrain card first.");
+                return;
+            }
+
+            // Determine target grid cell (must be a placeholder)
+            let targetGridX = null;
+            let targetGridY = null;
+            if (event.target.classList.contains('placement-placeholder')) {
+                targetGridX = parseInt(event.target.dataset.gridX, 10);
+                targetGridY = parseInt(event.target.dataset.gridY, 10);
+                logMessage(`Attempting placement at placeholder (${targetGridX}, ${targetGridY})`);
+            } else {
+                logMessage("Invalid placement spot. Click on one of the dashed outlines.");
+                return; // Click was not on a valid placeholder
+            }
+
+            const gridKey = `${targetGridX}_${targetGridY}`;
+
+            // --- Validate Placement Location (redundant check, but safe) ---
+            const potentialSpots = new Set();
+            if (placedPositions.size === 0) {
+                potentialSpots.add(`${START_GRID_COORD}_${START_GRID_COORD}`);
+            } else {
+                placedPositions.forEach(posKey => {
+                    const [x, y] = posKey.split('_').map(Number);
+                    const neighbors = [`${x + 1}_${y}`, `${x - 1}_${y}`, `${x}_${y + 1}`, `${x}_${y - 1}`];
+                    neighbors.forEach(neighborKey => {
+                        if (!placedPositions.has(neighborKey)) potentialSpots.add(neighborKey);
+                    });
+                });
+            }
+            if (!potentialSpots.has(gridKey)) {
+                logMessage("Invalid placement spot (validation failed). Click on one of the dashed outlines.");
+                return;
+            }
+
+            // --- Prepare and Send Placement Data ---
+            const nextPlayer = currentPlayer === 1 ? 2 : 1;
+            const cardIdForPlacement = nextCardId; // Determine ID before sending
+
+            const placementData = {
+                owner: currentPlayer,
+                unitName: selectedUnitForPlacement,
+                terrainIndex: selectedTerrainIndexForPlacement,
+                gridX: targetGridX,
+                gridY: targetGridY,
+                nextPlayer: nextPlayer,
+                cardId: cardIdForPlacement // Include the ID for synchronization
+            };
+
+            sendData('placement', placementData);
+
+            // Apply placement locally immediately
+            applyPlacement(placementData);
+        }
+
+        function selectUnitForPlacement(index, unitName) {
+            if (gameState !== 'PLACEMENT' || currentPlayer !== localPlayerRole) return;
+            selectedUnitIndexForPlacement = index;
+            selectedUnitForPlacement = unitName;
+            logMessage(`Selected Unit: ${unitName}`);
+            updateUI();
+        }
+
+        function selectTerrainForPlacement(terrainIndex) {
+            if (gameState !== 'PLACEMENT' || currentPlayer !== localPlayerRole) return;
+            selectedTerrainIndexForPlacement = terrainIndex;
+            const terrainData = fixedTerrainCards[terrainIndex];
+            logMessage(`Selected Terrain: [${TERRAIN_EMOJIS[terrainData.top]}, ...]`);
+            updateUI();
+        }
+
+        // --- Memo Pad Functions (Unchanged) ---
+        function displayMemoPadContent(player) {
+            const memoPopover = document.getElementById('memo-popover');
+            // Use the localPlayerRole to decide which player's perspective to show
+            const displayPlayer = player === localPlayerRole ? localPlayerRole : (localPlayerRole === 1 ? 2 : 1);
+            const originalPairings = initialPlayerPairings[displayPlayer];
+
+            if (!originalPairings || originalPairings.length === 0) {
+                memoPopover.innerHTML = `<h5>Player ${displayPlayer} Memo Pad</h5><p>No pairings data found.</p>`;
+                return;
+            }
+
+            // Sort pairings for consistent display (e.g., alphabetically by unit name)
+            const sortedPairings = [...originalPairings].sort((a, b) => a.unit.localeCompare(b.unit));
+
+
+            let content = `<h5>Player ${displayPlayer} Memo Pad</h5><ul>`;
+            sortedPairings.forEach(pair => {
+                const terrainEmojis = `
+                    <span class="memo-edge-top">${TERRAIN_EMOJIS[pair.terrain.top]}</span>
+                    <span class="memo-edge-right">${TERRAIN_EMOJIS[pair.terrain.right]}</span>
+                    <span class="memo-edge-bottom">${TERRAIN_EMOJIS[pair.terrain.bottom]}</span>
+                    <span class="memo-edge-left">${TERRAIN_EMOJIS[pair.terrain.left]}</span>
+                `;
+                content += `<li><span class="memo-terrain">${terrainEmojis}</span><span class="memo-unit">${pair.unit}</span></li>`;
+            });
+            content += `</ul>`;
+            memoPopover.innerHTML = content;
+        }
+
+
+        function toggleMemoPad() {
+            if (!conn || !conn.open) return; // Only allow if connected
+            const memoPopover = document.getElementById('memo-popover');
+            const currentDisplay = window.getComputedStyle(memoPopover).display;
+
+            if (currentDisplay === 'none') {
+                // Display memo for the *current* player whose turn it is
+                displayMemoPadContent(currentPlayer);
+                memoPopover.style.display = 'block';
+            } else {
+                memoPopover.style.display = 'none';
+            }
+        }
+
+        // --- Data Handling ---
+        function handleReceivedData(data) {
+            const { type, payload } = data;
+            switch (type) {
+                case 'setup':
+                    applySetup(payload);
+                    break;
+                case 'placement':
+                    applyPlacement(payload);
+                    break;
+                case 'reveal':
+                    applyReveal(payload);
+                    break;
+                case 'move':
+                    applyMove(payload);
+                    break;
+                case 'attackResult':
+                    applyAttackResult(payload);
+                    break;
+                // Add other message types if needed (e.g., chat, sync requests)
+                default:
+                    console.warn('Received unknown data type:', type);
+            }
+        }
+
+        // --- UI Update Function ---
+        function updateUI() {
+            const placementControlsDiv = document.getElementById('placement-controls');
+            const infoDiv = document.getElementById('info');
+            const memoButton = document.getElementById('memo-toggle-button');
+            const boardDiv = document.getElementById('board');
+            const bodyEl = document.body;
+
+            // Set body class based on whose turn it is locally
+            if (localPlayerRole === currentPlayer && (gameState === 'PLACEMENT' || gameState === 'GAMEPLAY')) {
+                bodyEl.classList.add('my-turn');
+            } else {
+                bodyEl.classList.remove('my-turn');
+            }
+
+            // --- State-Specific UI Updates ---
+            boardDiv.querySelectorAll('.placement-placeholder').forEach(el => el.remove()); // Clean placeholders
+
+            if (gameState === 'CONNECTING' || gameState === 'DISCONNECTED') {
+                placementControlsDiv.style.display = 'none';
+                infoDiv.textContent = gameState === 'CONNECTING' ? 'Connecting...' : 'Disconnected. Please refresh.';
+                memoButton.style.display = 'none';
+                boardDiv.style.cursor = 'default';
+            } else if (gameState === 'PLACEMENT') {
+                placementControlsDiv.style.display = 'block';
+                infoDiv.style.display = 'none';
+                memoButton.style.display = 'inline-block';
+                boardDiv.style.cursor = (localPlayerRole === currentPlayer) ? 'copy' : 'not-allowed';
+
+                // Render placement placeholders only if it's the local player's turn? Or always show? Always show is better.
+                const potentialSpots = new Set();
+                if (placedPositions.size === 0) {
+                    potentialSpots.add(`${START_GRID_COORD}_${START_GRID_COORD}`);
+                } else {
+                    placedPositions.forEach(posKey => {
+                        const [x, y] = posKey.split('_').map(Number);
+                        const neighbors = [`${x + 1}_${y}`, `${x - 1}_${y}`, `${x}_${y + 1}`, `${x}_${y - 1}`];
+                        neighbors.forEach(neighborKey => {
+                            if (!placedPositions.has(neighborKey)) potentialSpots.add(neighborKey);
+                        });
+                    });
+                }
+                potentialSpots.forEach(spotKey => {
+                    const [x, y] = spotKey.split('_').map(Number);
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'placement-placeholder';
+                    placeholder.style.setProperty('--grid-x', x);
+                    placeholder.style.setProperty('--grid-y', y);
+                    placeholder.dataset.gridX = x;
+                    placeholder.dataset.gridY = y;
+                    boardDiv.appendChild(placeholder);
+                });
+
+                // Update placement title and instructions
+                document.getElementById('placement-title').textContent = `Placement Phase - Player ${currentPlayer}'s Turn ${currentPlayer === localPlayerRole ? '(Your Turn)' : "(Opponent's Turn)"}`;
+                document.getElementById('placement-instructions').textContent = `Select one unit and one terrain, then click an empty, valid spot on the board. (${placedCardPairCount}/${TOTAL_CARD_PAIRS_TO_PLACE} placed)`;
+
+                // Populate available units/terrains for the *current* player
+                const unitsArea = document.getElementById('placement-units-area');
+                const terrainsArea = document.getElementById('placement-terrains-area');
+                unitsArea.innerHTML = '';
+                terrainsArea.innerHTML = '';
+
+                if (localPlayerRole === currentPlayer) { // Only show selection cards if it's your turn
+                    playerAvailableUnits[currentPlayer].forEach((unitName, index) => {
+                        const cardDiv = document.createElement('div');
+                        cardDiv.className = 'placement-unit-card';
+                        const stats = unitStats[unitName];
+                        cardDiv.innerHTML = `
+                            <div class="unit-name">${unitName}</div>
+                            <div class="stats">
+                                <span class="attack">A: ${stats.attack}</span>
+                                <span class="defense">D: ${stats.defense}</span>
+                            </div>
+                        `;
+                        cardDiv.onclick = () => selectUnitForPlacement(index, unitName);
+                        if (index === selectedUnitIndexForPlacement) {
+                            cardDiv.classList.add('selected-for-placement');
+                        }
+                        unitsArea.appendChild(cardDiv);
+                    });
+
+                    playerAvailableTerrains[currentPlayer].forEach(terrainIndex => {
+                        const cardDiv = document.createElement('div');
+                        cardDiv.className = `placement-terrain-card player${currentPlayer}`;
+                        const terrainData = fixedTerrainCards[terrainIndex];
+                        cardDiv.innerHTML = `
+                            <div class="terrain-edges">
+                                <span class="terrain-edge edge-top">${TERRAIN_EMOJIS[terrainData.top]}</span>
+                                <span class="terrain-edge edge-right">${TERRAIN_EMOJIS[terrainData.right]}</span>
+                                <span class="terrain-edge edge-bottom">${TERRAIN_EMOJIS[terrainData.bottom]}</span>
+                                <span class="terrain-edge edge-left">${TERRAIN_EMOJIS[terrainData.left]}</span>
+                            </div>
+                        `;
+                        cardDiv.onclick = () => selectTerrainForPlacement(terrainIndex);
+                        if (terrainIndex === selectedTerrainIndexForPlacement) {
+                            cardDiv.classList.add('selected-for-placement');
+                        }
+                        terrainsArea.appendChild(cardDiv);
+                    });
+                } else {
+                    unitsArea.innerHTML = '<i>Waiting for opponent...</i>';
+                    terrainsArea.innerHTML = '<i>Waiting for opponent...</i>';
+                }
+
+
+            } else if (gameState === 'GAMEPLAY' || gameState === 'GAMEOVER') {
+                placementControlsDiv.style.display = 'none';
+                infoDiv.style.display = 'block';
+                memoButton.style.display = 'inline-block';
+                boardDiv.style.cursor = 'default';
+
+                // Update Info Bar
+                const p1Units = board.filter(c => c && c.owner === 1 && c.unit).length;
+                const p2Units = board.filter(c => c && c.owner === 2 && c.unit).length;
+                let turnText = gameState === 'GAMEOVER' ? "Game Over" : `Current Turn: Player ${currentPlayer} ${currentPlayer === localPlayerRole ? '(Your Turn)' : "(Opponent's Turn)"}`;
+                infoDiv.innerHTML = `
+                    <span class="player1-text">Player 1 Units: ${p1Units}</span> |
+                    <span class="${currentPlayer === 1 ? 'player1-text' : 'player2-text'}">${turnText}</span> |
+                    <span class="player2-text">Player 2 Units: ${p2Units}</span>
+                 `;
+
+                // Update Memo Toggle Button Text and Color (based on whose turn it is)
+                if (memoButton) {
+                    memoButton.textContent = `Player ${currentPlayer} Memo`;
+                    memoButton.style.backgroundColor = currentPlayer === 1 ? '#4a90e2' : '#e94e77';
+                }
+                // If memo pad is open, update its content for the current player
+                const memoPopover = document.getElementById('memo-popover');
+                if (memoPopover && window.getComputedStyle(memoPopover).display !== 'none') {
+                    displayMemoPadContent(currentPlayer);
+                }
+            }
+
+            // --- Common UI Updates (Cards, Defeated Area) ---
+            const attackerCard = selectedCardIndex !== null ? board[selectedCardIndex] : null;
+
+            board.forEach((card, i) => {
+                if (!card || !card.element) return;
+
+                const div = card.element;
+                div.className = `card player${card.owner || 0}`; // Base classes
+                div.classList.remove('selectable-initial', 'selectable-move', 'selectable-attack', 'not-selectable', 'selected', 'hidden');
+
+                if (card.hidden) div.classList.add('hidden');
+                if (i === selectedCardIndex) div.classList.add('selected');
+
+                // Determine Selectable State only during GAMEPLAY and if it's the local player's turn
+                if (gameState === 'GAMEPLAY' && localPlayerRole === currentPlayer) {
+                    if (selectedCardIndex === null) { // Selecting initial unit
+                        if (card.owner === currentPlayer && card.unit) {
+                            div.classList.add('selectable-initial');
+                        } else {
+                            div.classList.add('not-selectable');
+                        }
+                    } else { // Unit selected, selecting target
+                        if (i === selectedCardIndex) {
+                            div.classList.add('not-selectable'); // Can't target self, but allow deselect click
+                        } else {
+                            const directionInfo = getDirectionInfo(attackerCard, card);
+                            if (directionInfo) { // Is adjacent
+                                const entryTerrainType = card.terrain[directionInfo.opposite];
+                                if (canUnitTraverse(attackerCard.unit, entryTerrainType)) {
+                                    if (card.unit === null) { // Empty, valid square
+                                        div.classList.add('selectable-move');
+                                    } else if (card.owner !== currentPlayer) { // Enemy unit
+                                        div.classList.add('selectable-attack');
+                                    } else { // Own unit
+                                        div.classList.add('not-selectable');
+                                    }
+                                } else { // Invalid terrain edge
+                                    div.classList.add('not-selectable');
+                                }
+                            } else { // Not adjacent
+                                div.classList.add('not-selectable');
+                            }
+                        }
+                    }
+                } else { // Not player's turn or not gameplay phase
+                    div.classList.add('not-selectable');
+                }
+
+                // Update Content (Unit Name, Stats, Terrain Edges)
+                const unitNameDiv = div.querySelector('.unit-name');
+                const statsDiv = div.querySelector('.stats');
+                const attackSpan = statsDiv.querySelector('.attack');
+                const defenseSpan = statsDiv.querySelector('.defense');
+                const terrainEdgesDiv = div.querySelector('.terrain-edges');
+                const edgeSpans = {
+                    top: terrainEdgesDiv.querySelector('.edge-top'),
+                    right: terrainEdgesDiv.querySelector('.edge-right'),
+                    bottom: terrainEdgesDiv.querySelector('.edge-bottom'),
+                    left: terrainEdgesDiv.querySelector('.edge-left'),
+                };
+
+                edgeSpans.top.textContent = TERRAIN_EMOJIS[card.terrain.top];
+                edgeSpans.right.textContent = TERRAIN_EMOJIS[card.terrain.right];
+                edgeSpans.bottom.textContent = TERRAIN_EMOJIS[card.terrain.bottom];
+                edgeSpans.left.textContent = TERRAIN_EMOJIS[card.terrain.left];
+
+                if (card.unit && !card.hidden) {
+                    unitNameDiv.textContent = card.unit;
+                    const stats = unitStats[card.unit];
+                    attackSpan.textContent = `A: ${stats.attack}`;
+                    defenseSpan.textContent = `D: ${stats.defense}`;
+                    unitNameDiv.style.visibility = 'visible';
+                    statsDiv.style.visibility = 'visible';
+                    terrainEdgesDiv.style.visibility = 'visible';
+                } else if (card.unit && card.hidden) {
+                    unitNameDiv.textContent = '?';
+                    attackSpan.textContent = `A: ?`;
+                    defenseSpan.textContent = `D: ?`;
+                    unitNameDiv.style.visibility = 'hidden';
+                    statsDiv.style.visibility = 'hidden';
+                    terrainEdgesDiv.style.visibility = 'visible';
+                } else { // Empty spot
+                    unitNameDiv.textContent = '';
+                    attackSpan.textContent = `A: -`;
+                    defenseSpan.textContent = `D: -`;
+                    unitNameDiv.style.visibility = 'hidden';
+                    statsDiv.style.visibility = 'hidden';
+                    terrainEdgesDiv.style.visibility = 'visible';
+                    div.classList.add('hidden');
+                }
+            });
+
+            // Update Defeated Units Area
+            const defeatedDiv = document.getElementById('defeated-units');
+            defeatedDiv.innerHTML = '<h4>Defeated Units</h4>';
+            defeatedUnits.forEach(defeated => {
+                const defeatedCardDiv = document.createElement('div');
+                defeatedCardDiv.className = `defeated-card player${defeated.owner}`;
+                const stats = unitStats[defeated.unit];
+                const attack = stats ? stats.attack : '?';
+                const defense = stats ? stats.defense : '?';
+                defeatedCardDiv.innerHTML = `
+                    <div class="terrain-edges">
+                       <span class="terrain-edge edge-top">${TERRAIN_EMOJIS[defeated.terrain.top]}</span>
+                       <span class="terrain-edge edge-right">${TERRAIN_EMOJIS[defeated.terrain.right]}</span>
+                       <span class="terrain-edge edge-bottom">${TERRAIN_EMOJIS[defeated.terrain.bottom]}</span>
+                       <span class="terrain-edge edge-left">${TERRAIN_EMOJIS[defeated.terrain.left]}</span>
+                    </div>
+                    <div class="unit-name">${defeated.unit}</div>
+                    <div class="stats">
+                       <span class="attack">A:${attack}</span> <span class="defense">D:${defense}</span>
+                    </div>`;
+                defeatedDiv.appendChild(defeatedCardDiv);
+            });
+        }
+
+        function logMessage(msg) {
+            document.getElementById('message-log').textContent = msg;
+            console.log(msg); // Keep console logs for debugging
+        }
+
+        // --- Initialization ---
+        document.addEventListener("DOMContentLoaded", () => {
+            initializePeer();
+            // Initial UI state before connection
+            document.getElementById('info').textContent = 'Enter Peer ID and connect, or wait for connection.';
+            updateUI(); // Set initial UI state
+        });
+
+    </script>
+</body>
+
+</html>
