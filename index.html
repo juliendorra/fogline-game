@@ -769,9 +769,9 @@
         }
 
         function updateUI() {
-            // Hide memo pad on UI update to prevent showing wrong player's info
-            const memoPopover = document.getElementById('memo-popover');
-            if (memoPopover) memoPopover.style.display = 'none';
+            // REMOVED: Automatic hiding of memo pad on UI update
+            // const memoPopover = document.getElementById('memo-popover');
+            // if (memoPopover) memoPopover.style.display = 'none';
 
             const attackerCard = selectedCardIndex !== null ? board[selectedCardIndex] : null;
 
