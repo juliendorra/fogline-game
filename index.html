@@ -783,6 +783,12 @@
                 memoButton.style.backgroundColor = currentPlayer === 1 ? '#4a90e2' : '#e94e77';
             }
 
+            // If memo pad is open, update its content for the current player
+            const memoPopover = document.getElementById('memo-popover');
+            if (memoPopover && window.getComputedStyle(memoPopover).display !== 'none') {
+                displayMemoPadContent(currentPlayer);
+            }
+
 
             board.forEach((card, i) => {
                 if (!card || !card.element) return; // Skip removed/missing
