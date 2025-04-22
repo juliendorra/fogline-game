@@ -998,14 +998,26 @@
 
         function displayMemoPadContent(player) {
             const memoPopover = document.getElementById('memo-popover');
-            const pairings = initialPlayerPairings[player];
-            if (!pairings || pairings.length === 0) {
+            const originalPairings = initialPlayerPairings[player];
+            if (!originalPairings || originalPairings.length === 0) {
                 memoPopover.innerHTML = `<h5>Player ${player} Memo Pad</h5><p>No pairings data found.</p>`;
                 return;
             }
 
+            // Create a copy and sort it based on Left -> Top -> Right terrain edges
+            const sortedPairings = [...originalPairings].sort((a, b) => {
+                const leftCompare = a.terrain.left.localeCompare(b.terrain.left);
+                if (leftCompare !== 0) return leftCompare;
+
+                const topCompare = a.terrain.top.localeCompare(b.terrain.top);
+                if (topCompare !== 0) return topCompare;
+
+                return a.terrain.right.localeCompare(b.terrain.right);
+            });
+
+
             let content = `<h5>Player ${player} Memo Pad</h5><ul>`;
-            pairings.forEach(pair => {
+            sortedPairings.forEach(pair => {
                 // Arrange terrain emojis spatially within the memo-terrain span
                 const terrainEmojis = `
                     <span class="memo-edge-top">${TERRAIN_EMOJIS[pair.terrain.top]}</span>
