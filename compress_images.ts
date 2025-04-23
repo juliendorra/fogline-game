@@ -15,7 +15,7 @@
  *
  * Options:
  *   --in=<dir>      Input directory containing PNG images (default: ./generated_cards)
- *   --out=<dir>     Output directory for compressed JPEG images (default: ./compressed_cards)
+ *   --out=<dir>     Output directory for compressed JPEG images (default: ./fogline/cards)
  *   --quality=<num> JPEG quality level (0-100, default: 50)
  *
  * Example:
@@ -26,9 +26,9 @@
  */
 
 import {
-  ImageMagick,
-  initializeImageMagick,
-  MagickFormat,
+    ImageMagick,
+    initializeImageMagick,
+    MagickFormat,
 } from "https://deno.land/x/imagemagick_deno@0.0.14/mod.ts";
 import { parse } from "https://deno.land/std@0.207.0/flags/mod.ts";
 import { ensureDir } from "https://deno.land/std@0.207.0/fs/ensure_dir.ts";
@@ -40,7 +40,7 @@ const args = parse(Deno.args, {
     number: ["quality"],
     default: {
         in: "./generated_cards",
-        out: "./compressed_cards",
+        out: "./fogline/cards",
         quality: 50,
     },
 });
@@ -111,12 +111,12 @@ async function main() {
             }
         }
     } catch (error) {
-         if (error instanceof Deno.errors.NotFound) {
+        if (error instanceof Deno.errors.NotFound) {
             console.error(`Error: Input directory not found: ${INPUT_DIR}`);
-         } else {
+        } else {
             console.error(`Error reading input directory ${INPUT_DIR}:`, error.message);
-         }
-         Deno.exit(1);
+        }
+        Deno.exit(1);
     }
 
 
