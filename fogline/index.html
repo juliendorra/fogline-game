@@ -1984,47 +1984,72 @@
         }
 
         // --- Memo Pad Functions (Updated for new data structure) ---
-        function displayMemoPadContent(player) {
+        function displayMemoPadContent() { // No longer needs player argument
             const memoPopover = document.getElementById('memo-popover');
-            // Use the localPlayerRole to decide which player's perspective to show
-            const displayPlayer = player === localPlayerRole ? localPlayerRole : (localPlayerRole === 1 ? 2 : 1);
-            const originalPairings = initialPlayerPairings[displayPlayer];
-
-            if (!originalPairings || originalPairings.length === 0) {
-                memoPopover.innerHTML = `<h5>Player ${displayPlayer} Memo Pad</h5><p>No pairings data found.</p>`;
+            if (!localPlayerRole) {
+                memoPopover.innerHTML = `<h5>Your Memo Pad</h5><p>Not connected.</p>`;
                 return;
             }
 
-            // Pairings are already sorted during setup
-            const sortedPairings = originalPairings; // Already { unitData, terrainData } objects
+            const playerPairings = initialPlayerPairings[localPlayerRole];
 
-            let content = `<h5>Player ${displayPlayer} Memo Pad</h5><ul>`;
-            sortedPairings.forEach(pair => {
-                const unitName = pair.unitData.unitName;
-                const instance = pair.unitData.instance;
-                const terrain = pair.terrainData.terrainData; // Get the actual terrain edges object
-                const terrainEmojis = `
-                    <span class="memo-edge-top">${TERRAIN_EMOJIS[terrain.top] || '?'}</span>
-                    <span class="memo-edge-right">${TERRAIN_EMOJIS[terrain.right] || '?'}</span>
-                    <span class="memo-edge-bottom">${TERRAIN_EMOJIS[terrain.bottom] || '?'}</span>
-                    <span class="memo-edge-left">${TERRAIN_EMOJIS[terrain.left] || '?'}</span>
-                `;
-                // Display unit name and instance number
-                content += `<li><span class="memo-terrain">${terrainEmojis}</span><span class="memo-unit">${unitName} #${instance}</span></li>`;
-            });
+            if (!playerPairings || playerPairings.length === 0) {
+                memoPopover.innerHTML = `<h5>Your Memo Pad</h5><p>No pairings data found.</p>`;
+                return;
+            }
+
+            let content = '';
+            let pairingsToShow = [];
+
+            if (gameState === 'PLACEMENT') {
+                content = `<h5>Your Placed Pairs (${placedCardPairCount}/${TOTAL_CARD_PAIRS_TO_PLACE / 2})</h5><ul>`;
+                // Filter board for cards placed by the local player
+                const placedByMe = board.filter(card => card && card.owner === localPlayerRole && card.unitData && card.terrainData);
+                const placedUnitImagePaths = new Set(placedByMe.map(card => card.unitData.imagePath));
+                const placedTerrainImagePaths = new Set(placedByMe.map(card => card.terrainData.imagePath));
+
+                // Filter initial pairings to find those matching placed cards
+                pairingsToShow = playerPairings.filter(pair =>
+                    placedUnitImagePaths.has(pair.unitData.imagePath) &&
+                    placedTerrainImagePaths.has(pair.terrainData.imagePath)
+                );
+                // Keep original sorting
+            } else { // GAMEPLAY or GAMEOVER
+                content = `<h5>Your Initial Pairings</h5><ul>`;
+                pairingsToShow = playerPairings; // Show all initial pairings (already sorted)
+            }
+
+            if (pairingsToShow.length === 0 && gameState === 'PLACEMENT') {
+                 content += '<li>No pairs placed yet.</li>';
+            } else {
+                pairingsToShow.forEach(pair => {
+                    const unitName = pair.unitData.unitName;
+                    const instance = pair.unitData.instance;
+                    const terrain = pair.terrainData.terrainData; // Get the actual terrain edges object
+                    const terrainEmojis = `
+                        <span class="memo-edge-top">${TERRAIN_EMOJIS[terrain.top] || '?'}</span>
+                        <span class="memo-edge-right">${TERRAIN_EMOJIS[terrain.right] || '?'}</span>
+                        <span class="memo-edge-bottom">${TERRAIN_EMOJIS[terrain.bottom] || '?'}</span>
+                        <span class="memo-edge-left">${TERRAIN_EMOJIS[terrain.left] || '?'}</span>
+                    `;
+                    // Display unit name and instance number
+                    content += `<li><span class="memo-terrain">${terrainEmojis}</span><span class="memo-unit">${unitName} #${instance}</span></li>`;
+                });
+            }
+
             content += `</ul>`;
             memoPopover.innerHTML = content;
         }
 
 
         function toggleMemoPad() {
-            if (!conn || !conn.open) return; // Only allow if connected
+            if (!conn || !conn.open || !localPlayerRole) return; // Only allow if connected and role assigned
             const memoPopover = document.getElementById('memo-popover');
             const currentDisplay = window.getComputedStyle(memoPopover).display;
 
             if (currentDisplay === 'none') {
-                // Display memo for the *current* player whose turn it is
-                displayMemoPadContent(currentPlayer);
+                // Always display memo for the local player
+                displayMemoPadContent(); // Call without argument
                 memoPopover.style.display = 'block';
             } else {
                 memoPopover.style.display = 'none';
