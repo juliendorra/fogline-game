@@ -186,7 +186,12 @@ async function main() {
             }
 
             // Save the generated card
-            const outputFilename = `terrain_player${playerNum}_card_${cardNum}.png`;
+            // Format: terrain_player{P}_{left}_{top}_{right}_{bottom}.png
+            const leftTerrain = cardDefinition.left.toLowerCase();
+            const topTerrain = cardDefinition.top.toLowerCase();
+            const rightTerrain = cardDefinition.right.toLowerCase();
+            const bottomTerrain = cardDefinition.bottom.toLowerCase();
+            const outputFilename = `terrain_player${playerNum}_${leftTerrain}_${topTerrain}_${rightTerrain}_${bottomTerrain}.png`;
             const outputPath = path.join(OUTPUT_DIR, outputFilename);
 
             try {
