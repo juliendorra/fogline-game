@@ -871,6 +871,7 @@
         </span> |
         Connect to Peer ID: <input type="text" id="peer-id-input" placeholder="Enter Peer ID">
         <button id="connect-button" onclick="connectToPeer()">Connect</button>
+        <button id="disconnect-button" onclick="disconnectPeer()" disabled>Disconnect</button>
         <span id="peer-status">Not Connected</span>
     </div>
 
@@ -921,15 +922,57 @@
         let conn = null;
         let myPeerId = null;
         let localPlayerRole = null; // 1 (Host/Initiator) or 2 (Guest/Receiver)
+        let peerInitializationAttempted = false; // Flag to prevent error loops
 
-        function initializePeer() {
-            peer = new Peer(); // Use PeerJS cloud server by default
+        function initializePeer(forceNewId = false) {
+            if (peerInitializationAttempted && !forceNewId) {
+                console.log("Peer initialization already attempted, skipping.");
+                return;
+            }
+            peerInitializationAttempted = true; // Mark that we've started initialization
+
+            const storedPeerId = localStorage.getItem('myPeerId');
+            let peerIdToUse = null;
+
+            if (storedPeerId && !forceNewId) {
+                console.log('Attempting to reuse stored Peer ID:', storedPeerId);
+                peerIdToUse = storedPeerId;
+                peer = new Peer(peerIdToUse);
+            } else {
+                if (forceNewId) {
+                    console.log('Forcing new Peer ID generation.');
+                } else {
+                    console.log('No stored Peer ID found, requesting new one.');
+                }
+                peer = new Peer(); // Request new ID from server
+            }
 
             peer.on('open', id => {
-                console.log('My PeerJS ID is:', id);
+                console.log('PeerJS connection open. My PeerJS ID is:', id);
                 myPeerId = id;
                 document.getElementById('my-peer-id').textContent = id;
-                document.getElementById('peer-status').textContent = 'Waiting for connection...';
+                peerInitializationAttempted = false; // Reset flag on successful open
+
+                // Store the confirmed Peer ID (could be the stored one or a new one)
+                try {
+                    localStorage.setItem('myPeerId', id);
+                    console.log('Stored/Confirmed my Peer ID:', id);
+                } catch (e) {
+                    console.error('Failed to store Peer ID in localStorage:', e);
+                }
+
+                // Check for last connected peer and attempt auto-reconnect
+                const lastConnectedPeerId = localStorage.getItem('lastConnectedPeerId');
+                if (lastConnectedPeerId && lastConnectedPeerId !== myPeerId) {
+                    console.log('Found last connected peer:', lastConnectedPeerId);
+                    attemptAutoReconnect(lastConnectedPeerId);
+                } else {
+                    document.getElementById('peer-status').textContent = 'Waiting for connection...';
+                    // Ensure connect button is enabled if not auto-connecting
+                    document.getElementById('connect-button').disabled = false;
+                    document.getElementById('peer-id-input').disabled = false;
+                    document.getElementById('disconnect-button').disabled = true;
+                }
             });
 
             peer.on('connection', incomingConn => {
@@ -963,6 +1006,35 @@
                 console.error('PeerJS error:', err);
                 logMessage(`PeerJS Error: ${err.type}`);
                 document.getElementById('peer-status').textContent = `Error: ${err.type}`;
+                peerInitializationAttempted = false; // Reset flag on error
+
+                // Specific handling for ID taken
+                if (err.type === 'unavailable-id') {
+                    logMessage('Stored Peer ID is unavailable. Getting a new one.');
+                    console.warn('Stored Peer ID was taken:', localStorage.getItem('myPeerId'));
+                    // Clear the invalid stored ID
+                    try {
+                        localStorage.removeItem('myPeerId');
+                    } catch (e) {
+                        console.error('Failed to remove Peer ID from localStorage:', e);
+                    }
+                    // Destroy the failed peer object before recreating
+                    if (peer && !peer.destroyed) {
+                        peer.destroy();
+                    }
+                    peer = null; // Ensure old peer object is cleared
+                    // Re-initialize, forcing a new ID request
+                    setTimeout(() => initializePeer(true), 100); // Small delay before retry
+                } else if (err.type === 'network') {
+                     logMessage('Network error connecting to PeerJS server. Check connection.');
+                     // Optionally implement retry logic here
+                } else if (err.type === 'server-error') {
+                     logMessage('PeerJS server error. Please try again later.');
+                }
+                // Reset button states on general error
+                document.getElementById('connect-button').disabled = false;
+                document.getElementById('peer-id-input').disabled = false;
+                document.getElementById('disconnect-button').disabled = true;
             });
         }
 
@@ -983,9 +1055,11 @@
 
             console.log('Attempting to connect to:', peerIdInput);
             document.getElementById('peer-status').textContent = `Connecting to ${peerIdInput}...`;
+            document.getElementById('connect-button').disabled = true; // Disable while attempting
+            document.getElementById('peer-id-input').disabled = true;
             conn = peer.connect(peerIdInput, { reliable: true });
             localPlayerRole = 1; // The initiator is Player 1
-            setupConnectionEvents();
+            setupConnectionEvents(); // setupConnectionEvents will handle storing the ID on 'open'
         }
 
         function setupConnectionEvents() {
@@ -996,7 +1070,16 @@
                 document.getElementById('peer-status').textContent = `Connected to ${conn.peer}`;
                 document.getElementById('peer-id-input').disabled = true;
                 document.getElementById('connect-button').disabled = true;
+                document.getElementById('disconnect-button').disabled = false; // Enable disconnect
                 logMessage(`Connected! You are Player ${localPlayerRole}.`);
+
+                // Store the successfully connected peer's ID
+                try {
+                    localStorage.setItem('lastConnectedPeerId', conn.peer);
+                    console.log('Stored last connected peer ID:', conn.peer);
+                } catch (e) {
+                    console.error('Failed to store last connected peer ID in localStorage:', e);
+                }
 
                 // Player 1 (Host) initiates the game setup
                 if (localPlayerRole === 1) {
@@ -1018,17 +1101,28 @@
                 document.getElementById('peer-status').textContent = 'Disconnected';
                 document.getElementById('peer-id-input').disabled = false;
                 document.getElementById('connect-button').disabled = false;
+                document.getElementById('peer-id-input').disabled = false; // Re-enable input
+                document.getElementById('disconnect-button').disabled = true; // Disable disconnect
                 document.getElementById('memo-toggle-button').disabled = true;
                 conn = null;
+                // Keep lastConnectedPeerId in localStorage for potential manual reconnect
                 // Optionally reset the game board or show a message
                 gameState = 'DISCONNECTED';
-                updateUI();
+                updateUI(); // updateUI will handle setting the correct state
             });
 
             conn.on('error', err => {
                 console.error('Connection error:', err);
                 logMessage(`Connection Error: ${err.type}`);
-                document.getElementById('peer-status').textContent = `Connection Error`;
+                document.getElementById('peer-status').textContent = `Connection Error: ${err.type}`;
+                // Ensure buttons are reset on error
+                document.getElementById('peer-id-input').disabled = false;
+                document.getElementById('connect-button').disabled = false;
+                document.getElementById('disconnect-button').disabled = true;
+                document.getElementById('memo-toggle-button').disabled = true;
+                conn = null; // Assume connection is lost/failed
+                gameState = 'DISCONNECTED'; // Set state to disconnected on error
+                updateUI(); // Update UI to reflect disconnected state
             });
         }
 
@@ -1040,6 +1134,56 @@
             } else {
                 console.error('Cannot send data: No open connection.');
                 logMessage('Error: Not connected to opponent.');
+            }
+        }
+
+        function attemptAutoReconnect(peerId) {
+            if (conn && conn.open) {
+                console.log('Already connected, skipping auto-reconnect.');
+                return;
+            }
+            if (!peer || peer.disconnected || peer.destroyed) {
+                 console.log('Peer object not ready for auto-reconnect.');
+                 document.getElementById('peer-status').textContent = 'Waiting for connection...';
+                 document.getElementById('connect-button').disabled = false;
+                 document.getElementById('peer-id-input').disabled = false;
+                 document.getElementById('disconnect-button').disabled = true;
+                 return;
+            }
+            if (peerId === myPeerId) {
+                console.log('Last connected peer ID is own ID, skipping auto-reconnect.');
+                document.getElementById('peer-status').textContent = 'Waiting for connection...';
+                document.getElementById('connect-button').disabled = false;
+                document.getElementById('peer-id-input').disabled = false;
+                document.getElementById('disconnect-button').disabled = true;
+                return;
+            }
+
+            console.log('Attempting auto-reconnect to:', peerId);
+            logMessage(`Attempting auto-reconnect to ${peerId}...`);
+            document.getElementById('peer-status').textContent = `Auto-connecting to ${peerId}...`;
+            document.getElementById('peer-id-input').value = peerId; // Pre-fill input for user context
+            document.getElementById('peer-id-input').disabled = true;
+            document.getElementById('connect-button').disabled = true;
+            document.getElementById('disconnect-button').disabled = true; // Can't disconnect during attempt
+
+            conn = peer.connect(peerId, { reliable: true });
+            localPlayerRole = 1; // Assume initiator role for auto-connect
+            setupConnectionEvents(); // Will handle 'open', 'close', 'error'
+        }
+
+        function disconnectPeer() {
+            if (conn && conn.open) {
+                console.log('Manually disconnecting from peer:', conn.peer);
+                logMessage('Disconnecting...');
+                conn.close(); // This will trigger the 'close' event handled in setupConnectionEvents
+            } else {
+                console.log('No active connection to disconnect.');
+                logMessage('Not connected.');
+                // Ensure UI is in disconnected state if somehow disconnect was clicked while not connected
+                document.getElementById('connect-button').disabled = false;
+                document.getElementById('peer-id-input').disabled = false;
+                document.getElementById('disconnect-button').disabled = true;
             }
         }
 
@@ -2120,6 +2264,15 @@
                 infoDiv.textContent = gameState === 'CONNECTING' ? 'Connecting...' : 'Disconnected. Please refresh.';
                 memoButton.style.display = 'none';
                 boardDiv.style.cursor = 'default';
+                // Ensure connect controls are enabled when disconnected
+                if (gameState === 'DISCONNECTED') {
+                     // Enable input/connect only if peer object exists and isn't busy connecting
+                     const peerReady = peer && !peer.disconnected && !peer.destroyed;
+                     const notConnecting = !conn; // Simple check, might need refinement if auto-reconnect has complex states
+                     document.getElementById('peer-id-input').disabled = !peerReady || !notConnecting;
+                     document.getElementById('connect-button').disabled = !peerReady || !notConnecting;
+                     document.getElementById('disconnect-button').disabled = true; // Always disabled when disconnected
+                }
             } else if (gameState === 'PLACEMENT') {
                 placementControlsDiv.style.display = 'block';
                 infoDiv.style.display = 'none';
@@ -2392,10 +2545,15 @@
 
         // --- Initialization ---
         document.addEventListener("DOMContentLoaded", () => {
-            initializePeer();
-            // Initial UI state before connection
-            document.getElementById('info').textContent = 'Enter Peer ID and connect, or wait for connection.';
-            updateUI(); // Set initial UI state
+            // Initial UI state before connection attempt
+            document.getElementById('info').textContent = 'Initializing Peer connection...';
+            document.getElementById('peer-status').textContent = 'Initializing...';
+            document.getElementById('connect-button').disabled = true;
+            document.getElementById('peer-id-input').disabled = true;
+            document.getElementById('disconnect-button').disabled = true;
+            updateUI(); // Set initial UI state (will reflect CONNECTING)
+
+            initializePeer(); // Start the peer initialization process
         });
 
     </script>
