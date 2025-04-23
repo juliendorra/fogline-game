@@ -43,6 +43,41 @@
             margin-left: 15px;
         }
 
+        .peer-id-container {
+            display: inline-flex;
+            /* Align ID and button */
+            align-items: center;
+            margin-right: 5px;
+            /* Space before the pipe */
+        }
+
+        #my-peer-id {
+            cursor: pointer;
+            /* Indicate text is selectable */
+            user-select: none;
+            /* Prevent accidental text selection during click */
+        }
+
+        #copy-peer-id-button {
+            cursor: pointer;
+            font-size: 0.8em;
+            margin-left: 5px;
+            padding: 2px 4px;
+            border: 1px solid #aaa;
+            border-radius: 3px;
+            background-color: #eee;
+            user-select: none;
+            /* Prevent selecting the button text */
+        }
+
+        #copy-peer-id-button:hover {
+            background-color: #ddd;
+        }
+
+        #copy-peer-id-button:active {
+            background-color: #ccc;
+        }
+
         #game-area {
             position: relative;
             width: 100vw;
@@ -60,23 +95,31 @@
         }
 
         .card {
-            width: 94px; /* Increased from 75px */
-            height: 131px; /* Increased from 105px */
+            width: 94px;
+            /* Increased from 75px */
+            height: 131px;
+            /* Increased from 105px */
             border: 1px solid #333;
             border-radius: 5px;
-            position: relative; /* Needed for border and absolute positioning */
+            position: relative;
+            /* Needed for border and absolute positioning */
             cursor: default;
             background-color: #fff;
             box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
-            display: flex; /* Use flex to center content */
+            display: flex;
+            /* Use flex to center content */
             justify-content: center;
             align-items: center;
-            padding: 0; /* Removed padding */
-            box-sizing: border-box; /* Border included in size */
+            padding: 0;
+            /* Removed padding */
+            box-sizing: border-box;
+            /* Border included in size */
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             margin: 2.5px;
-            overflow: hidden; /* Keep overflow hidden */
-            background-color: #ddd; /* Fallback background */
+            overflow: hidden;
+            /* Keep overflow hidden */
+            background-color: #ddd;
+            /* Fallback background */
         }
 
         /* Style for the image within the card */
@@ -84,10 +127,14 @@
             display: block;
             width: 100%;
             height: 100%;
-            object-fit: contain; /* Scale image */
-            background-color: #fff; /* Background for the image area */
-            position: relative; /* Ensure image is layerable */
-            z-index: 1; /* Sit above potential background elements if needed */
+            object-fit: contain;
+            /* Scale image */
+            background-color: #fff;
+            /* Background for the image area */
+            position: relative;
+            /* Ensure image is layerable */
+            z-index: 1;
+            /* Sit above potential background elements if needed */
         }
 
 
@@ -128,7 +175,8 @@
             flex-direction: column;
             justify-content: space-between;
             align-items: center;
-            padding: 0; /* Removed padding */
+            padding: 0;
+            /* Removed padding */
             box-sizing: border-box;
             position: relative;
             /* For terrain edges */
@@ -610,8 +658,10 @@
 
         /* --- Placeholder for Placement --- */
         .placement-placeholder {
-            width: 94px; /* Match new card size */
-            height: 131px; /* Match new card size */
+            width: 94px;
+            /* Match new card size */
+            height: 131px;
+            /* Match new card size */
             border: 2px dashed #aaa;
             /* Dashed border */
             border-radius: 5px;
@@ -649,26 +699,35 @@
             border: 1px solid #ddd;
             background-color: #fff;
             border-radius: 5px;
-            min-height: 150px; /* Keep min height */
-            max-width: 400px; /* Recalculated: 4 * 94px + 3 * 8px */
+            min-height: 150px;
+            /* Keep min height */
+            max-width: 400px;
+            /* Recalculated: 4 * 94px + 3 * 8px */
             margin: 0 auto;
             /* Center the grid if container is wider */
         }
 
         .placement-unit-card,
         .placement-terrain-card {
-            width: 94px; /* Match new card size */
-            height: 131px; /* Match new card size */
+            width: 94px;
+            /* Match new card size */
+            height: 131px;
+            /* Match new card size */
             border: 1px solid #aaa;
             border-radius: 5px;
             background-color: #fff;
             cursor: pointer;
             display: flex;
-            flex-direction: column; /* Keep for fallback layout */
-            justify-content: center; /* Center content (image) */
-            align-items: center; /* Center content (image) */
-            padding: 0; /* Removed padding */
-            box-sizing: border-box; /* Border included in size */
+            flex-direction: column;
+            /* Keep for fallback layout */
+            justify-content: center;
+            /* Center content (image) */
+            align-items: center;
+            /* Center content (image) */
+            padding: 0;
+            /* Removed padding */
+            box-sizing: border-box;
+            /* Border included in size */
             position: relative;
             transition: transform 0.1s ease, box-shadow 0.1s ease;
             font-size: 11px;
@@ -717,7 +776,8 @@
             flex-direction: column;
             justify-content: space-between;
             align-items: center;
-            padding: 0; /* Removed padding */
+            padding: 0;
+            /* Removed padding */
             box-sizing: border-box;
             position: relative;
             background-color: #fff;
@@ -804,7 +864,11 @@
 
     <!-- PeerJS Controls -->
     <div id="peer-controls">
-        Your Peer ID: <strong id="my-peer-id">Waiting...</strong> |
+        Your Peer ID:
+        <span class="peer-id-container">
+            <strong id="my-peer-id" onclick="selectPeerIdText()">Waiting...</strong>
+            <span id="copy-peer-id-button" onclick="copyPeerIdToClipboard()" title="Copy Peer ID">copy</span>
+        </span> |
         Connect to Peer ID: <input type="text" id="peer-id-input" placeholder="Enter Peer ID">
         <button id="connect-button" onclick="connectToPeer()">Connect</button>
         <span id="peer-status">Not Connected</span>
@@ -978,6 +1042,45 @@
                 logMessage('Error: Not connected to opponent.');
             }
         }
+
+        // --- Peer ID Utility Functions ---
+        function copyPeerIdToClipboard() {
+            const peerIdElement = document.getElementById('my-peer-id');
+            const peerId = peerIdElement.textContent;
+            if (peerId && peerId !== 'Waiting...') {
+                navigator.clipboard.writeText(peerId).then(() => {
+                    logMessage(`Peer ID "${peerId}" copied to clipboard.`);
+                    // Optional: Provide visual feedback, e.g., change button text briefly
+                    const copyButton = document.getElementById('copy-peer-id-button');
+                    if (copyButton) {
+                        const originalText = copyButton.textContent;
+                        copyButton.textContent = 'Copied!';
+                        setTimeout(() => { copyButton.textContent = originalText; }, 1500);
+                    }
+                }).catch(err => {
+                    console.error('Failed to copy Peer ID: ', err);
+                    logMessage('Failed to copy Peer ID.');
+                });
+            } else {
+                logMessage('Cannot copy Peer ID yet.');
+            }
+        }
+
+        function selectPeerIdText() {
+            const peerIdElement = document.getElementById('my-peer-id');
+            const peerId = peerIdElement.textContent;
+            if (peerId && peerId !== 'Waiting...') {
+                const range = document.createRange();
+                range.selectNodeContents(peerIdElement);
+                const selection = window.getSelection();
+                selection.removeAllRanges(); // Clear previous selection
+                selection.addRange(range);
+                logMessage('Peer ID selected.'); // Optional feedback
+            } else {
+                logMessage('Peer ID not available to select.');
+            }
+        }
+
 
         // --- Game Constants and Variables ---
         // Stores card objects { id, unitData: {unitName, instance, stats, imagePath}, terrainData: {terrainIndex, terrainData, imagePath}, hidden, owner, gridX, gridY, element, hasImageError }
@@ -2166,7 +2269,7 @@
                             }
                             img.alt = `Empty Space on Terrain [T:${terrainEdges.top}, R:${terrainEdges.right}, B:${terrainEdges.bottom}, L:${terrainEdges.left}]`;
                             // Ensure hidden class is applied if it's an empty space (even if 'revealed')
-                             if (!div.classList.contains('hidden')) div.classList.add('hidden');
+                            if (!div.classList.contains('hidden')) div.classList.add('hidden');
                         }
                     }
                     // Note: The onerror handler assigned in placeCard should still work.
