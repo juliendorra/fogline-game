@@ -1561,9 +1561,14 @@
             }
 
             // Reset local selections (relevant for the player who just placed)
-            selectedUnitForPlacement = null;
-            selectedUnitIndexForPlacement = null;
-            selectedTerrainIndexForPlacement = null;
+            selectedUnitDataForPlacement = null; // Reset selection object
+            selectedTerrainDataForPlacement = null; // Reset selection object
+
+            // Refresh memo pad if it's currently open to show the new pair immediately
+            const memoPopover = document.getElementById('memo-popover');
+            if (memoPopover && window.getComputedStyle(memoPopover).display !== 'none') {
+                displayMemoPadContent(); // Refresh content for local player
+            }
 
             updateUI();
         }
@@ -1999,30 +2004,21 @@
             }
 
             let content = '';
-            let pairingsToShow = [];
 
             if (gameState === 'PLACEMENT') {
-                content = `<h5>Your Placed Pairs (${placedCardPairCount}/${TOTAL_CARD_PAIRS_TO_PLACE / 2})</h5><ul>`;
-                // Filter board for cards placed by the local player
-                const placedByMe = board.filter(card => card && card.owner === localPlayerRole && card.unitData && card.terrainData);
-                const placedUnitImagePaths = new Set(placedByMe.map(card => card.unitData.imagePath));
-                const placedTerrainImagePaths = new Set(placedByMe.map(card => card.terrainData.imagePath));
+                // Count how many pairs the local player has actually placed
+                const placedByMeCount = board.filter(card => card && card.owner === localPlayerRole && card.unitData && card.terrainData).length;
+                content = `<h5>Your Placement Memo (${placedByMeCount}/${playerPairings.length})</h5><ul>`;
 
-                // Filter initial pairings to find those matching placed cards
-                pairingsToShow = playerPairings.filter(pair =>
-                    placedUnitImagePaths.has(pair.unitData.imagePath) &&
-                    placedTerrainImagePaths.has(pair.terrainData.imagePath)
+                // Get the imagePaths of units placed by the local player
+                const placedUnitImagePaths = new Set(
+                    board
+                        .filter(card => card && card.owner === localPlayerRole && card.unitData)
+                        .map(card => card.unitData.imagePath)
                 );
-                // Keep original sorting
-            } else { // GAMEPLAY or GAMEOVER
-                content = `<h5>Your Initial Pairings</h5><ul>`;
-                pairingsToShow = playerPairings; // Show all initial pairings (already sorted)
-            }
 
-            if (pairingsToShow.length === 0 && gameState === 'PLACEMENT') {
-                 content += '<li>No pairs placed yet.</li>';
-            } else {
-                pairingsToShow.forEach(pair => {
+                // Iterate through ALL initial pairings for the local player
+                playerPairings.forEach(pair => {
                     const unitName = pair.unitData.unitName;
                     const instance = pair.unitData.instance;
                     const terrain = pair.terrainData.terrainData; // Get the actual terrain edges object
@@ -2032,7 +2028,27 @@
                         <span class="memo-edge-bottom">${TERRAIN_EMOJIS[terrain.bottom] || '?'}</span>
                         <span class="memo-edge-left">${TERRAIN_EMOJIS[terrain.left] || '?'}</span>
                     `;
-                    // Display unit name and instance number
+
+                    // Check if this specific unit (by imagePath) has been placed
+                    const isUnitPlaced = placedUnitImagePaths.has(pair.unitData.imagePath);
+                    const unitDisplay = isUnitPlaced ? `${unitName} #${instance}` : '---'; // Show name or placeholder
+
+                    content += `<li><span class="memo-terrain">${terrainEmojis}</span><span class="memo-unit">${unitDisplay}</span></li>`;
+                });
+
+            } else { // GAMEPLAY or GAMEOVER
+                content = `<h5>Your Initial Pairings</h5><ul>`;
+                // Show all initial pairings with unit names
+                playerPairings.forEach(pair => {
+                    const unitName = pair.unitData.unitName;
+                    const instance = pair.unitData.instance;
+                    const terrain = pair.terrainData.terrainData; // Get the actual terrain edges object
+                    const terrainEmojis = `
+                        <span class="memo-edge-top">${TERRAIN_EMOJIS[terrain.top] || '?'}</span>
+                        <span class="memo-edge-right">${TERRAIN_EMOJIS[terrain.right] || '?'}</span>
+                        <span class="memo-edge-bottom">${TERRAIN_EMOJIS[terrain.bottom] || '?'}</span>
+                        <span class="memo-edge-left">${TERRAIN_EMOJIS[terrain.left] || '?'}</span>
+                    `;
                     content += `<li><span class="memo-terrain">${terrainEmojis}</span><span class="memo-unit">${unitName} #${instance}</span></li>`;
                 });
             }
@@ -2205,15 +2221,15 @@
                     <span class="player2-text">Player 2 Units: ${p2Units}</span>
                  `;
 
-                // Update Memo Toggle Button Text and Color (based on whose turn it is)
+                // Update Memo Toggle Button Text and Color (based on local player)
                 if (memoButton) {
-                    memoButton.textContent = `Player ${currentPlayer} Memo`;
-                    memoButton.style.backgroundColor = currentPlayer === 1 ? '#4a90e2' : '#e94e77';
+                    memoButton.textContent = `Player ${localPlayerRole} Memo`; // Always show local player's memo button text
+                    memoButton.style.backgroundColor = localPlayerRole === 1 ? '#4a90e2' : '#e94e77'; // Color based on local player
                 }
-                // If memo pad is open, update its content for the current player
+                // If memo pad is open, update its content for the local player
                 const memoPopover = document.getElementById('memo-popover');
                 if (memoPopover && window.getComputedStyle(memoPopover).display !== 'none') {
-                    displayMemoPadContent(currentPlayer);
+                    displayMemoPadContent(); // Call without argument to update local player's memo
                 }
             }
 
