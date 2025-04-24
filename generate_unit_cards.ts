@@ -21,8 +21,8 @@
  * (Note: --allow-net might be needed for fetching the canvas module)
  *
  * Options:
- *   --bg1=<path>           Path to Player 1 background image (default: ./assets/bg_player1.png)
- *   --bg2=<path>           Path to Player 2 background image (default: ./assets/bg_player2.png)
+ *   --unitBg1=<path>       Path to Player 1 unit background image (default: ./assets/unit_background_player1.png)
+ *   --unitBg2=<path>       Path to Player 2 unit background image (default: ./assets/unit_background_player2.png)
  *   --mobileCommand=<path> Path to Mobile Command image (default: ./assets/unit_mobile_command.png)
  *   --tank=<path>          Path to Tank image (default: ./assets/unit_tank.png)
  *   --infantry=<path>      Path to Infantry image (default: ./assets/unit_infantry.png)
@@ -41,8 +41,8 @@
  *
  * Example:
  * deno run --allow-read --allow-write --allow-net generate_unit_cards.ts \
- *   --bg1=./images/blue_background.png \
- *   --bg2=./images/red_background.png \
+ *   --unitBg1=./images/unit_blue.png \
+ *   --unitBg2=./images/unit_red.png \
  *   --infantry=./units/inf.png \
  *   --tank=./units/tank.png \
  *   --out=./game_cards \
@@ -57,13 +57,13 @@ import * as path from "https://deno.land/std@0.207.0/path/mod.ts";
 // --- Configuration ---
 const args = parse(Deno.args, {
     string: [
-        "bg1", "bg2", "mobileCommand", "tank", "infantry", "artillery", "specialOps",
+        "unitBg1", "unitBg2", "mobileCommand", "tank", "infantry", "artillery", "specialOps",
         "out", "fontFamily", "textColor"
     ],
     number: ["width", "height", "unitImageHeight", "fontSizeName", "fontSizeStats", "marginVertical", "marginHorizontal"], // Added marginHorizontal
     default: {
-        bg1: "./assets/bg_player1.png",
-        bg2: "./assets/bg_player2.png",
+        unitBg1: "./assets/unit_background_player1.png",
+        unitBg2: "./assets/unit_background_player2.png",
         mobileCommand: "./assets/unit_mobile_command.png",
         tank: "./assets/unit_tank.png",
         infantry: "./assets/unit_infantry.png",
@@ -125,8 +125,8 @@ async function main() {
     await ensureDir(OUTPUT_DIR);
 
     // Load base images
-    const bgPlayer1 = await loadCanvasImage(args.bg1);
-    const bgPlayer2 = await loadCanvasImage(args.bg2);
+    const unitBgPlayer1 = await loadCanvasImage(args.unitBg1);
+    const unitBgPlayer2 = await loadCanvasImage(args.unitBg2);
 
     // Load unit images
     const unitImages: { [key: string]: Image | null } = {};
@@ -140,24 +140,24 @@ async function main() {
         }
     }
 
-    if (!bgPlayer1 || !bgPlayer2 || !allImagesLoaded) {
+    if (!unitBgPlayer1 || !unitBgPlayer2 || !allImagesLoaded) {
         console.error("One or more essential images failed to load. Aborting.");
         return;
     }
 
     // Check background sizes
-    if (bgPlayer1.width() !== CARD_WIDTH || bgPlayer1.height() !== CARD_HEIGHT ||
-        bgPlayer2.width() !== CARD_WIDTH || bgPlayer2.height() !== CARD_HEIGHT) {
-        console.warn(`Warning: Background images do not match the card dimensions (${CARD_WIDTH}x${CARD_HEIGHT}). They will be scaled.`);
+    if (unitBgPlayer1.width() !== CARD_WIDTH || unitBgPlayer1.height() !== CARD_HEIGHT ||
+        unitBgPlayer2.width() !== CARD_WIDTH || unitBgPlayer2.height() !== CARD_HEIGHT) {
+        console.warn(`Warning: Unit background images do not match the card dimensions (${CARD_WIDTH}x${CARD_HEIGHT}). They will be scaled.`);
     }
 
-    const playerBackgrounds = [bgPlayer1, bgPlayer2];
+    const playerUnitBackgrounds = [unitBgPlayer1, unitBgPlayer2];
     const unitCounters: { [key: string]: number } = {}; // To number cards like tank_1, tank_2
 
     // Generate cards
-    for (let playerIndex = 0; playerIndex < playerBackgrounds.length; playerIndex++) {
+    for (let playerIndex = 0; playerIndex < playerUnitBackgrounds.length; playerIndex++) {
         const playerNum = playerIndex + 1;
-        const baseBg = playerBackgrounds[playerIndex];
+        const baseBg = playerUnitBackgrounds[playerIndex];
         unitCounters[playerNum] = {}; // Reset counters for each player
 
         console.log(`\nGenerating cards for Player ${playerNum}...`);

@@ -19,21 +19,21 @@
  * (Note: --allow-net might be needed for fetching the canvas module)
  *
  * Options:
- *   --bg1=<path>      Path to Player 1 background image (default: ./assets/bg_player1.png)
- *   --bg2=<path>      Path to Player 2 background image (default: ./assets/bg_player2.png)
- *   --plains=<path>   Path to Plains icon image (default: ./assets/icon_plains.png)
- *   --forest=<path>   Path to Forest icon image (default: ./assets/icon_forest.png)
- *   --mountain=<path> Path to Mountain icon image (default: ./assets/icon_mountain.png)
- *   --out=<dir>       Output directory for generated cards (default: ./generated_cards)
- *   --width=<px>      Width of the generated cards (default: 300)
- *   --height=<px>     Height of the generated cards (default: 420)
- *   --iconSize=<px>   Size (width & height) of terrain icons (default: 60)
- *   --padding=<px>    Padding from card edge to icon (default: 10)
+ *   --terrainBg1=<path> Path to Player 1 terrain background image (default: ./assets/terrain_background_player1.png)
+ *   --terrainBg2=<path> Path to Player 2 terrain background image (default: ./assets/terrain_background_player2.png)
+ *   --plains=<path>     Path to Plains icon image (default: ./assets/icon_plains.png)
+ *   --forest=<path>     Path to Forest icon image (default: ./assets/icon_forest.png)
+ *   --mountain=<path>   Path to Mountain icon image (default: ./assets/icon_mountain.png)
+ *   --out=<dir>         Output directory for generated cards (default: ./generated_cards)
+ *   --width=<px>        Width of the generated cards (default: 300)
+ *   --height=<px>       Height of the generated cards (default: 420)
+ *   --iconSize=<px>     Size (width & height) of terrain icons (default: 60)
+ *   --padding=<px>      Padding from card edge to icon (default: 10)
  *
  * Example:
  * deno run --allow-read --allow-write --allow-net generate_terrain_cards.ts \
- *   --bg1=./images/blue_background.png \
- *   --bg2=./images/red_background.png \
+ *   --terrainBg1=./images/terrain_blue.png \
+ *   --terrainBg2=./images/terrain_red.png \
  *   --plains=./icons/plains_60.png \
  *   --forest=./icons/forest_60.png \
  *   --mountain=./icons/mountain_60.png \
@@ -47,10 +47,10 @@ import * as path from "https://deno.land/std@0.207.0/path/mod.ts";
 
 // --- Configuration ---
 const args = parse(Deno.args, {
-    string: ["bg1", "bg2", "plains", "forest", "mountain", "out"],
+    string: ["terrainBg1", "terrainBg2", "plains", "forest", "mountain", "out"],
     default: {
-        bg1: "./assets/bg_player1.png",
-        bg2: "./assets/bg_player2.png",
+        terrainBg1: "./assets/terrain_background_player1.png",
+        terrainBg2: "./assets/terrain_background_player2.png",
         plains: "./assets/icon_plains.png",
         forest: "./assets/icon_forest.png",
         mountain: "./assets/icon_mountain.png",
@@ -112,13 +112,13 @@ async function main() {
     await ensureDir(OUTPUT_DIR);
 
     // Load base images using canvas loadImage
-    const bgPlayer1 = await loadCanvasImage(args.bg1);
-    const bgPlayer2 = await loadCanvasImage(args.bg2);
+    const terrainBgPlayer1 = await loadCanvasImage(args.terrainBg1);
+    const terrainBgPlayer2 = await loadCanvasImage(args.terrainBg2);
     const iconPlains = await loadCanvasImage(args.plains);
     const iconForest = await loadCanvasImage(args.forest);
     const iconMountain = await loadCanvasImage(args.mountain);
 
-    if (!bgPlayer1 || !bgPlayer2 || !iconPlains || !iconForest || !iconMountain) {
+    if (!terrainBgPlayer1 || !terrainBgPlayer2 || !iconPlains || !iconForest || !iconMountain) {
         console.error("One or more essential images failed to load. Aborting.");
         return;
     }
@@ -129,9 +129,9 @@ async function main() {
         iconMountain.width() !== ICON_SIZE || iconMountain.height() !== ICON_SIZE) {
         console.warn(`Warning: One or more icons do not match the expected size (${ICON_SIZE}x${ICON_SIZE}). They will be drawn at ${ICON_SIZE}x${ICON_SIZE}.`);
     }
-    if (bgPlayer1.width() !== CARD_WIDTH || bgPlayer1.height() !== CARD_HEIGHT ||
-        bgPlayer2.width() !== CARD_WIDTH || bgPlayer2.height() !== CARD_HEIGHT) {
-        console.warn(`Warning: Background images do not match the card dimensions (${CARD_WIDTH}x${CARD_HEIGHT}). They will be scaled.`);
+    if (terrainBgPlayer1.width() !== CARD_WIDTH || terrainBgPlayer1.height() !== CARD_HEIGHT ||
+        terrainBgPlayer2.width() !== CARD_WIDTH || terrainBgPlayer2.height() !== CARD_HEIGHT) {
+        console.warn(`Warning: Terrain background images do not match the card dimensions (${CARD_WIDTH}x${CARD_HEIGHT}). They will be scaled.`);
     }
 
 
@@ -141,7 +141,7 @@ async function main() {
         [TERRAIN_TYPES.MOUNTAIN]: iconMountain,
     };
 
-    const playerBackgrounds = [bgPlayer1, bgPlayer2];
+    const playerTerrainBackgrounds = [terrainBgPlayer1, terrainBgPlayer2];
 
     // Calculate icon positions
     const posXCenter = Math.round((CARD_WIDTH - ICON_SIZE) / 2);
@@ -154,9 +154,9 @@ async function main() {
     };
 
     // Generate cards
-    for (let playerIndex = 0; playerIndex < playerBackgrounds.length; playerIndex++) {
+    for (let playerIndex = 0; playerIndex < playerTerrainBackgrounds.length; playerIndex++) {
         const playerNum = playerIndex + 1;
-        const baseBg = playerBackgrounds[playerIndex];
+        const baseBg = playerTerrainBackgrounds[playerIndex];
 
         console.log(`\nGenerating cards for Player ${playerNum}...`);
 
