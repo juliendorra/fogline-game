@@ -1510,15 +1510,15 @@
 
         function getUnitImagePath(owner, unitName, instance) {
             const stats = unitStats[unitName];
-            if (!stats || !stats.safeName) return 'path/to/default/unit_error.jpg'; // Error image path
-            return `${CARD_IMAGE_DIR}/unit_player${owner}_${stats.safeName}_${instance}.jpg`;
+            if (!stats || !stats.safeName) return 'path/to/default/unit_error.webp'; // Error image path (optional update)
+            return `${CARD_IMAGE_DIR}/unit_player${owner}_${stats.safeName}_${instance}.webp`; // Use .webp
         }
 
         function getTerrainImagePath(owner, terrainData) {
-            if (!terrainData) return 'path/to/default/terrain_error.jpg'; // Error image path
+            if (!terrainData) return 'path/to/default/terrain_error.webp'; // Error image path (optional update)
             const t = terrainData;
             const format = (type) => type ? type.toLowerCase() : 'unknown';
-            return `${CARD_IMAGE_DIR}/terrain_player${owner}_${format(t.left)}_${format(t.top)}_${format(t.right)}_${format(t.bottom)}.jpg`;
+            return `${CARD_IMAGE_DIR}/terrain_player${owner}_${format(t.left)}_${format(t.top)}_${format(t.right)}_${format(t.bottom)}.webp`; // Use .webp
         }
 
         // Renders the original HTML structure inside a card div if the image fails
