@@ -43,6 +43,85 @@
             margin-left: 15px;
         }
 
+        /* --- Connection Details/Summary Styles --- */
+        #connection-details {
+            width: 90%;
+            max-width: 1000px;
+            margin: 10px auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #e0e0e0;
+            overflow: hidden;
+            /* Contain children */
+        }
+
+        #connection-summary {
+            padding: 10px 15px;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: #d0d0d0;
+            border-bottom: 1px solid #ccc;
+            list-style: none;
+            /* Remove default marker */
+            display: block;
+            /* Ensure it takes full width */
+            user-select: none;
+        }
+
+        #connection-summary::-webkit-details-marker {
+            display: none;
+        }
+
+        /* Hide default arrow */
+        #connection-summary::before {
+            /* Custom arrow */
+            content: '▶ ';
+            font-size: 0.8em;
+            margin-right: 5px;
+            display: inline-block;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        #connection-details[open]>#connection-summary::before {
+            transform: rotate(90deg);
+        }
+
+        #connection-details[open]>#connection-summary {
+            border-bottom: 1px solid #ccc;
+            /* Keep border when open */
+        }
+
+        #connection-details:not([open])>#connection-summary {
+            border-bottom: none;
+            /* Remove border when closed */
+        }
+
+
+        #peer-controls {
+            margin: 0;
+            /* Reset margin */
+            padding: 15px;
+            /* Adjust padding */
+            background-color: transparent;
+            /* Inherit from details */
+            border: none;
+            /* Remove original border */
+            border-radius: 0;
+            /* Remove original radius */
+            text-align: left;
+            /* Align content left for better flow */
+            width: 100%;
+            /* Take full width of details */
+            box-sizing: border-box;
+        }
+
+        #peer-controls span,
+        #peer-controls input,
+        #peer-controls button {
+            margin-bottom: 5px;
+            /* Add some spacing */
+        }
+
         .peer-id-container {
             display: inline-flex;
             /* Align ID and button */
@@ -862,18 +941,23 @@
 <body>
     <h2 style="text-align:center;">Fogline, card-based micro-wargame</h2>
 
-    <!-- PeerJS Controls -->
-    <div id="peer-controls">
-        Your Peer ID:
-        <span class="peer-id-container">
-            <strong id="my-peer-id" onclick="selectPeerIdText()">Waiting...</strong>
-            <span id="copy-peer-id-button" onclick="copyPeerIdToClipboard()" title="Copy Peer ID">copy</span>
-        </span> |
-        Connect to Peer ID: <input type="text" id="peer-id-input" placeholder="Enter Peer ID">
-        <button id="connect-button" onclick="connectToPeer()">Connect</button>
-        <button id="disconnect-button" onclick="disconnectPeer()" disabled>Disconnect</button>
-        <span id="peer-status">Not Connected</span>
-    </div>
+    <!-- Collapsible PeerJS Controls -->
+    <details id="connection-details">
+        <summary id="connection-summary">Connection Status: Initializing...</summary>
+        <div id="peer-controls">
+            Your Peer ID:
+            <span class="peer-id-container">
+                <strong id="my-peer-id" onclick="selectPeerIdText()">Waiting...</strong>
+                <span id="copy-peer-id-button" onclick="copyPeerIdToClipboard()" title="Copy Peer ID">copy</span>
+            </span>
+            <br>
+            Connect to Peer ID: <input type="text" id="peer-id-input" placeholder="Enter Peer ID">
+            <button id="connect-button" onclick="connectToPeer()">Connect</button>
+            <button id="disconnect-button" onclick="disconnectPeer()" disabled>Disconnect</button>
+            <br>
+            Status: <span id="peer-status">Not Connected</span>
+        </div>
+    </details>
 
     <!-- Memo Pad Popover -->
     <div id="memo-popover">
@@ -1234,7 +1318,7 @@
                 logMessage('Error: Not connected to opponent.');
             }
         }
-        
+
         // --- Auto Reconnect Function ---
         // Defined earlier, after initializePeer
 
@@ -2322,12 +2406,15 @@
             const memoButton = document.getElementById('memo-toggle-button');
             const boardDiv = document.getElementById('board');
             const bodyEl = document.body;
+            const connectionDetails = document.getElementById('connection-details'); // Get details element
+            const connectionSummary = document.getElementById('connection-summary'); // Get summary element
+            const peerStatusSpan = document.getElementById('peer-status'); // Get status span inside controls
+
+            // Update Connection Summary Text
+            connectionSummary.textContent = `Connection Status: ${peerStatusSpan.textContent}`;
 
             // Set body class based on whose turn it is locally
             if (localPlayerRole === currentPlayer && (gameState === 'PLACEMENT' || gameState === 'GAMEPLAY')) {
-                bodyEl.classList.add('my-turn');
-            } else {
-                bodyEl.classList.remove('my-turn');
             }
 
             // --- State-Specific UI Updates ---
@@ -2335,25 +2422,42 @@
 
             if (gameState === 'CONNECTING' || gameState === 'DISCONNECTED') {
                 placementControlsDiv.style.display = 'none';
-                infoDiv.textContent = gameState === 'CONNECTING' ? 'Connecting...' : 'Disconnected. Please refresh.';
+                infoDiv.textContent = gameState === 'CONNECTING' ? 'Connecting...' : 'Disconnected. Please refresh or reconnect.';
                 memoButton.style.display = 'none';
                 boardDiv.style.cursor = 'default';
+
                 // Ensure connect controls are enabled when disconnected
                 if (gameState === 'DISCONNECTED') {
-                    // Enable input/connect only if peer object exists and isn't busy connecting
                     const peerReady = peer && !peer.disconnected && !peer.destroyed;
-                    const notConnecting = !conn; // Simple check, might need refinement if auto-reconnect has complex states
+                    const notConnecting = !conn;
                     document.getElementById('peer-id-input').disabled = !peerReady || !notConnecting;
                     document.getElementById('connect-button').disabled = !peerReady || !notConnecting;
-                    document.getElementById('disconnect-button').disabled = true; // Always disabled when disconnected
+                    document.getElementById('disconnect-button').disabled = true;
+                } else { // Connecting state
+                    document.getElementById('peer-id-input').disabled = true;
+                    document.getElementById('connect-button').disabled = true;
+                    document.getElementById('disconnect-button').disabled = true;
                 }
+                connectionDetails.open = true; // Keep connection details open when not connected/connecting
+                connectionDetails.style.pointerEvents = 'auto'; // Allow interaction with controls inside
+                connectionSummary.style.cursor = 'default'; // Summary itself is not clickable to close
+                // Disable the toggle functionality via CSS might be cleaner, but JS works too
+                connectionSummary.onclick = (e) => e.preventDefault(); // Prevent toggling via summary click
+
             } else if (gameState === 'PLACEMENT') {
                 placementControlsDiv.style.display = 'block';
                 infoDiv.style.display = 'none';
+                // Allow connection details to be collapsed when game starts
+                if (!connectionDetails.hasAttribute('data-initially-closed')) {
+                    connectionDetails.open = false; // Close by default once placement starts
+                    connectionDetails.setAttribute('data-initially-closed', 'true'); // Mark that we've set initial state
+                }
+                connectionDetails.style.pointerEvents = 'auto'; // Ensure interaction is enabled
+                connectionSummary.style.cursor = 'pointer'; // Make summary clickable
+                connectionSummary.onclick = null; // Remove the toggle prevention
+
                 memoButton.style.display = 'inline-block';
                 boardDiv.style.cursor = (localPlayerRole === currentPlayer) ? 'copy' : 'not-allowed';
-
-                // Render placement placeholders only if it's the local player's turn? Or always show? Always show is better.
                 const potentialSpots = new Set();
                 if (placedPositions.size === 0) {
                     potentialSpots.add(`${START_GRID_COORD}_${START_GRID_COORD}`);
@@ -2435,6 +2539,15 @@
             } else if (gameState === 'GAMEPLAY' || gameState === 'GAMEOVER') {
                 placementControlsDiv.style.display = 'none';
                 infoDiv.style.display = 'block';
+                // Allow connection details to be collapsed
+                if (!connectionDetails.hasAttribute('data-initially-closed')) {
+                    connectionDetails.open = false; // Close by default if not already handled in placement
+                    connectionDetails.setAttribute('data-initially-closed', 'true');
+                }
+                connectionDetails.style.pointerEvents = 'auto'; // Ensure interaction is enabled
+                connectionSummary.style.cursor = 'pointer'; // Make summary clickable
+                connectionSummary.onclick = null; // Remove the toggle prevention
+
                 memoButton.style.display = 'inline-block';
                 boardDiv.style.cursor = 'default';
 
