@@ -955,6 +955,9 @@
             <button id="connect-button" onclick="connectToPeer()">Connect</button>
             <button id="disconnect-button" onclick="disconnectPeer()" disabled>Disconnect</button>
             <br>
+            Your Display Name: <input type="text" id="display-name-input" placeholder="Enter Name">
+            <!-- Save button removed, name saves on blur -->
+            <br>
             Status: <span id="peer-status">Not Connected</span>
         </div>
     </details>
@@ -1014,6 +1017,8 @@
         let myPeerId = null;
         let localPlayerRole = null; // 1 (Host/Initiator) or 2 (Guest/Receiver)
         let peerInitializationAttempted = false; // Flag to prevent error loops
+        let localDisplayName = "Player"; // Default display name
+        let opponentDisplayName = null; // Store opponent's name
 
         function initializePeer(forceNewId = false) {
             // Prevent re-entry if already initializing, unless forcing new ID after error
@@ -1249,11 +1254,15 @@
 
             conn.on('open', () => {
                 console.log('Connection established with:', conn.peer);
-                document.getElementById('peer-status').textContent = `Connected to ${conn.peer}`;
+                // Send display name immediately
+                sendData('displayName', { name: localDisplayName });
+
+                // Update status (will be updated again if opponent name received)
+                document.getElementById('peer-status').textContent = `Connected to ${opponentDisplayName || conn.peer}`;
                 document.getElementById('peer-id-input').disabled = true;
                 document.getElementById('connect-button').disabled = true;
                 document.getElementById('disconnect-button').disabled = false; // Enable disconnect
-                logMessage(`Connected! You are Player ${localPlayerRole}.`);
+                logMessage(`Connected to ${opponentDisplayName || conn.peer}! You are Player ${localPlayerRole}.`);
 
                 // Store the successfully connected peer's ID
                 try {
@@ -1287,6 +1296,7 @@
                 document.getElementById('disconnect-button').disabled = true; // Disable disconnect
                 document.getElementById('memo-toggle-button').disabled = true;
                 conn = null;
+                opponentDisplayName = null; // Reset opponent name
                 // Keep lastConnectedPeerId in localStorage for potential manual reconnect
                 // Optionally reset the game board or show a message
                 gameState = 'DISCONNECTED';
@@ -1303,6 +1313,7 @@
                 document.getElementById('disconnect-button').disabled = true;
                 document.getElementById('memo-toggle-button').disabled = true;
                 conn = null; // Assume connection is lost/failed
+                opponentDisplayName = null; // Reset opponent name
                 gameState = 'DISCONNECTED'; // Set state to disconnected on error
                 updateUI(); // Update UI to reflect disconnected state
             });
@@ -1382,6 +1393,30 @@
         window.toggleMemoPad = toggleMemoPad;
         window.copyPeerIdToClipboard = copyPeerIdToClipboard;
         window.selectPeerIdText = selectPeerIdText; // Expose this function too
+
+        // --- Display Name Function ---
+        function saveDisplayName() {
+            const nameInput = document.getElementById('display-name-input');
+            const newName = nameInput.value.trim();
+            if (newName) {
+                localDisplayName = newName;
+                try {
+                    localStorage.setItem('foglineDisplayName', newName);
+                    logMessage(`Display name saved as "${newName}".`);
+                } catch (e) {
+                    console.error('Failed to save display name to localStorage:', e);
+                    logMessage('Failed to save display name.');
+                }
+                // If already connected, send the updated name
+                if (conn && conn.open) {
+                    sendData('displayName', { name: localDisplayName });
+                }
+            } else {
+                logMessage('Display name cannot be empty.');
+                nameInput.value = localDisplayName; // Reset to current name if empty
+            }
+        }
+        window.saveDisplayName = saveDisplayName; // Expose function
 
 
         // --- Game Constants and Variables ---
@@ -2393,6 +2428,16 @@
                 case 'attackResult':
                     applyAttackResult(payload);
                     break;
+                case 'displayName':
+                    opponentDisplayName = payload.name;
+                    console.log(`Opponent's display name set to: ${opponentDisplayName}`);
+                    logMessage(`Opponent is "${opponentDisplayName}".`);
+                    // Update UI elements that show peer info
+                    if (conn && conn.open) {
+                        document.getElementById('peer-status').textContent = `Connected to ${opponentDisplayName} (${conn.peer})`;
+                    }
+                    updateUI(); // Refresh UI with the new name
+                    break;
                 // Add other message types if needed (e.g., chat, sync requests)
                 default:
                     console.warn('Received unknown data type:', type);
@@ -2410,8 +2455,21 @@
             const connectionSummary = document.getElementById('connection-summary'); // Get summary element
             const peerStatusSpan = document.getElementById('peer-status'); // Get status span inside controls
 
-            // Update Connection Summary Text
-            connectionSummary.textContent = `Connection Status: ${peerStatusSpan.textContent}`;
+            // Update Connection Summary Text (use opponent name if available)
+            let statusText = peerStatusSpan.textContent;
+            if (conn && conn.open && opponentDisplayName) {
+                statusText = `Connected to ${opponentDisplayName}`;
+            } else if (conn && conn.open) {
+                statusText = `Connected to ${conn.peer}`;
+            } else if (myPeerId) {
+                statusText = 'Waiting for connection...';
+            } else {
+                statusText = 'Initializing...';
+            }
+            connectionSummary.textContent = `Connection Status: ${statusText}`;
+            // Also update the status span inside the details view
+            peerStatusSpan.textContent = statusText;
+
 
             // Set body class based on whose turn it is locally
             if (localPlayerRole === currentPlayer && (gameState === 'PLACEMENT' || gameState === 'GAMEPLAY')) {
@@ -2482,7 +2540,8 @@
                 });
 
                 // Update placement title and instructions
-                document.getElementById('placement-title').textContent = `Placement Phase - Player ${currentPlayer}'s Turn ${currentPlayer === localPlayerRole ? '(Your Turn)' : "(Opponent's Turn)"}`;
+                const opponentNameText = opponentDisplayName ? `(Opponent: ${opponentDisplayName})` : "(Opponent's Turn)";
+                document.getElementById('placement-title').textContent = `Placement Phase - Player ${currentPlayer}'s Turn ${currentPlayer === localPlayerRole ? '(Your Turn)' : opponentNameText}`;
                 document.getElementById('placement-instructions').textContent = `Select one unit and one terrain, then click an empty, valid spot on the board. (${placedCardPairCount}/${TOTAL_CARD_PAIRS_TO_PLACE} placed)`;
 
                 // Populate available units/terrains for the *current* player
@@ -2554,17 +2613,21 @@
                 // Update Info Bar (use unitData to count)
                 const p1Units = board.filter(c => c && c.owner === 1 && c.unitData).length;
                 const p2Units = board.filter(c => c && c.owner === 2 && c.unitData).length;
-                let turnText = gameState === 'GAMEOVER' ? "Game Over" : `Current Turn: Player ${currentPlayer} ${currentPlayer === localPlayerRole ? '(Your Turn)' : "(Opponent's Turn)"}`;
+                const opponentNameText = opponentDisplayName ? `(${opponentDisplayName}'s Turn)` : "(Opponent's Turn)";
+                let turnText = gameState === 'GAMEOVER' ? "Game Over" : `Current Turn: Player ${currentPlayer} ${currentPlayer === localPlayerRole ? `(${localDisplayName}'s Turn)` : opponentNameText}`;
+                const p1Name = localPlayerRole === 1 ? localDisplayName : (opponentDisplayName || 'Player 1');
+                const p2Name = localPlayerRole === 2 ? localDisplayName : (opponentDisplayName || 'Player 2');
+
                 infoDiv.innerHTML = `
-                    <span class="player1-text">Player 1 Units: ${p1Units}</span> |
+                    <span class="player1-text">${p1Name} Units: ${p1Units}</span> |
                     <span class="${currentPlayer === 1 ? 'player1-text' : 'player2-text'}">${turnText}</span> |
-                    <span class="player2-text">Player 2 Units: ${p2Units}</span>
+                    <span class="player2-text">${p2Name} Units: ${p2Units}</span>
                  `;
 
                 // Update Memo Toggle Button Text and Color (based on local player)
                 if (memoButton) {
-                    memoButton.textContent = `Player ${localPlayerRole} Memo`; // Always show local player's memo button text
-                    memoButton.style.backgroundColor = localPlayerRole === 1 ? '#4a90e2' : '#e94e77'; // Color based on local player
+                    memoButton.textContent = `${localDisplayName}'s Memo`; // Use local display name
+                    memoButton.style.backgroundColor = localPlayerRole === 1 ? '#4a90e2' : '#e94e77'; // Color based on local player role
                 }
                 // If memo pad is open, update its content for the local player
                 const memoPopover = document.getElementById('memo-popover');
@@ -2738,6 +2801,22 @@
             document.getElementById('connect-button').disabled = true;
             document.getElementById('peer-id-input').disabled = true;
             document.getElementById('disconnect-button').disabled = true;
+            // Load saved display name
+            const savedName = localStorage.getItem('foglineDisplayName');
+            if (savedName) {
+                localDisplayName = savedName;
+                document.getElementById('display-name-input').value = savedName;
+            } else {
+                document.getElementById('display-name-input').value = localDisplayName; // Show default if none saved
+            }
+
+            // Add blur event listener for saving display name
+            const displayNameInput = document.getElementById('display-name-input');
+
+            displayNameInput.addEventListener('blur', () => {
+                window.saveDisplayName()
+            });
+
             updateUI(); // Set initial UI state (will reflect CONNECTING)
 
             initializePeer(); // Start the peer initialization process
