@@ -1,0 +1,927 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 10px;
+    background-color: #f0f0f0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#peer-controls {
+    margin: 10px 0;
+    padding: 10px;
+    background-color: #e0e0e0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    text-align: center;
+    width: 90%;
+    max-width: 1000px;
+}
+
+#peer-controls input {
+    padding: 5px;
+    margin: 0 5px;
+}
+
+#peer-controls button {
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+#peer-status {
+    font-weight: bold;
+    margin-left: 15px;
+}
+
+/* --- Connection Details/Summary Styles --- */
+#connection-details {
+    width: 90%;
+    max-width: 1000px;
+    margin: 10px auto;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #e0e0e0;
+    overflow: hidden;
+    /* Contain children */
+}
+
+#connection-summary {
+    padding: 10px 15px;
+    font-weight: bold;
+    cursor: pointer;
+    background-color: #d0d0d0;
+    border-bottom: 1px solid #ccc;
+    list-style: none;
+    /* Remove default marker */
+    display: block;
+    /* Ensure it takes full width */
+    user-select: none;
+}
+
+#connection-summary::-webkit-details-marker {
+    display: none;
+}
+
+/* Hide default arrow */
+#connection-summary::before {
+    /* Custom arrow */
+    content: '▶ ';
+    font-size: 0.8em;
+    margin-right: 5px;
+    display: inline-block;
+    transition: transform 0.2s ease-in-out;
+}
+
+#connection-details[open]>#connection-summary::before {
+    transform: rotate(90deg);
+}
+
+#connection-details[open]>#connection-summary {
+    border-bottom: 1px solid #ccc;
+    /* Keep border when open */
+}
+
+#connection-details:not([open])>#connection-summary {
+    border-bottom: none;
+    /* Remove border when closed */
+}
+
+
+#peer-controls {
+    margin: 0;
+    /* Reset margin */
+    padding: 15px;
+    /* Adjust padding */
+    background-color: transparent;
+    /* Inherit from details */
+    border: none;
+    /* Remove original border */
+    border-radius: 0;
+    /* Remove original radius */
+    text-align: left;
+    /* Align content left for better flow */
+    width: 100%;
+    /* Take full width of details */
+    box-sizing: border-box;
+}
+
+#peer-controls span,
+#peer-controls input,
+#peer-controls button {
+    margin-bottom: 5px;
+    /* Add some spacing */
+}
+
+.peer-id-container {
+    display: inline-flex;
+    /* Align ID and button */
+    align-items: center;
+    margin-right: 5px;
+    /* Space before the pipe */
+}
+
+#my-peer-id {
+    cursor: pointer;
+    /* Indicate text is selectable */
+    user-select: none;
+    /* Prevent accidental text selection during click */
+}
+
+#copy-peer-id-button {
+    cursor: pointer;
+    font-size: 0.8em;
+    margin-left: 5px;
+    padding: 2px 4px;
+    border: 1px solid #aaa;
+    border-radius: 3px;
+    background-color: #eee;
+    user-select: none;
+    /* Prevent selecting the button text */
+}
+
+#copy-peer-id-button:hover {
+    background-color: #ddd;
+}
+
+#copy-peer-id-button:active {
+    background-color: #ccc;
+}
+
+#game-area {
+    position: relative;
+    width: 100vw;
+    margin-bottom: 20px auto;
+    border: 0px solid #ccc;
+    background-color: #e8e8e8;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#board {
+    display: inline-grid;
+    padding: 27.5px;
+}
+
+.card {
+    width: 94px;
+    /* Increased from 75px */
+    height: 131px;
+    /* Increased from 105px */
+    border: 1px solid #333;
+    border-radius: 5px;
+    position: relative;
+    /* Needed for border and absolute positioning */
+    cursor: default;
+    background-color: #fff;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+    display: flex;
+    /* Use flex to center content */
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    /* Removed padding */
+    box-sizing: border-box;
+    /* Border included in size */
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    margin: 2.5px;
+    overflow: hidden;
+    /* Keep overflow hidden */
+    background-color: #ddd;
+    /* Fallback background */
+}
+
+/* Style for the image within the card */
+.card img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    /* Scale image */
+    background-color: #fff;
+    /* Background for the image area */
+    position: relative;
+    /* Ensure image is layerable */
+    z-index: 1;
+    /* Sit above potential background elements if needed */
+}
+
+
+.card.selected {
+    border: 2px solid gold;
+    box-shadow: 0 0 10px gold;
+}
+
+/* Style for hidden cards (image source is changed via JS) */
+.card.hidden img {
+    /* Filter removed - terrain image will be shown clearly */
+    /* filter: brightness(0.6) blur(1px); */
+    /* opacity: 0.8; */
+}
+
+/* Fallback for hidden cards if image fails */
+.card.hidden .fallback-content {
+    background-color: #888;
+    color: #ccc;
+}
+
+.card.hidden .fallback-content .unit-name,
+.card.hidden .fallback-content .stats {
+    visibility: hidden;
+}
+
+.card.hidden .fallback-content .terrain-edges {
+    visibility: visible;
+    /* Keep terrain visible on fallback hidden */
+}
+
+
+/* --- HTML Fallback Content Styles (if image fails) --- */
+.fallback-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0;
+    /* Removed padding */
+    box-sizing: border-box;
+    position: relative;
+    /* For terrain edges */
+    background-color: #fff;
+    /* Match original card background */
+}
+
+.fallback-content .unit-name {
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 5px;
+    z-index: 1;
+}
+
+.fallback-content .stats {
+    font-size: 12px;
+    text-align: center;
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 5px;
+    z-index: 1;
+}
+
+.fallback-content .stats span {
+    display: inline-block;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.fallback-content .attack {
+    background-color: #ffcccb;
+    border: 1px solid #f08080;
+}
+
+.fallback-content .defense {
+    background-color: #add8e6;
+    border: 1px solid #87ceeb;
+}
+
+.fallback-content .terrain-edges {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.fallback-content .terrain-edge {
+    position: absolute;
+    font-size: 18px;
+    /* Emoji size */
+    line-height: 1;
+    opacity: 0.8;
+}
+
+.fallback-content .edge-top {
+    top: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.fallback-content .edge-right {
+    top: 50%;
+    right: 2px;
+    transform: translateY(-50%);
+}
+
+.fallback-content .edge-bottom {
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.fallback-content .edge-left {
+    top: 50%;
+    left: 2px;
+    transform: translateY(-50%);
+}
+
+/* --- End HTML Fallback Styles --- */
+
+
+/* --- Cursor and Hover based on Action State --- */
+.selectable-initial {
+    cursor: pointer;
+}
+
+.selectable-move {
+    cursor: pointer;
+}
+
+.selectable-attack {
+    cursor: crosshair;
+}
+
+.not-selectable {
+    cursor: not-allowed;
+}
+
+/* Only apply hover effects if it's the player's turn */
+body.my-turn .selectable-initial:hover,
+body.my-turn .selectable-move:hover,
+body.my-turn .selectable-attack:hover {
+    transform: translateY(-3px);
+    box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.3);
+}
+
+
+/* --- Player Border Styles --- */
+.player1 {
+    border-left: 5px solid #4a90e2;
+}
+
+.player2 {
+    border-left: 5px solid #e94e77;
+}
+
+#info,
+#controls {
+    margin-top: 15px;
+    margin-bottom: 15px;
+    text-align: center;
+    width: 100%;
+}
+
+#info span {
+    margin: 0 15px;
+    font-weight: bold;
+}
+
+.player1-text {
+    color: #4a90e2;
+}
+
+.player2-text {
+    color: #e94e77;
+}
+
+button {
+    padding: 8px 15px;
+    font-size: 14px;
+    cursor: pointer;
+    background-color: #5cb85c;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    margin: 5px;
+}
+
+button:hover {
+    background-color: #4cae4c;
+}
+
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+
+#defeated-units {
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px dashed #aaa;
+    min-height: 120px;
+    width: 90%;
+    max-width: 1000px;
+    background-color: #f8f8f8;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 5px;
+}
+
+#defeated-units h4 {
+    width: 100%;
+    text-align: center;
+    margin: 0 0 10px 0;
+    color: #555;
+}
+
+.defeated-card {
+    width: 60px;
+    height: 90px;
+    border: 1px solid #666;
+    border-radius: 3px;
+    background-color: #ccc;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px;
+    box-sizing: border-box;
+    font-size: 10px;
+    position: relative;
+    /* For player border */
+    display: flex;
+    /* Center image */
+    justify-content: center;
+    align-items: center;
+    background-color: #ccc;
+    /* Fallback background */
+}
+
+.defeated-card img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background-color: #eee;
+    /* Image area background */
+}
+
+/* Styles for fallback HTML content in defeated cards */
+.defeated-card .fallback-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px;
+    box-sizing: border-box;
+    font-size: 10px;
+    position: relative;
+    /* For edges */
+    background-color: #ccc;
+    /* Match original */
+}
+
+.defeated-card .fallback-content .unit-name {
+    font-size: 11px;
+    font-weight: bold;
+    margin-top: 3px;
+    z-index: 1;
+}
+
+.defeated-card .fallback-content .stats {
+    font-size: 9px;
+    margin-bottom: 3px;
+    z-index: 1;
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+}
+
+.defeated-card .fallback-content .stats span {
+    padding: 1px 2px;
+    border-radius: 2px;
+}
+
+.defeated-card .fallback-content .attack {
+    background-color: #ffdddd;
+    border: 1px solid #ffaaaa;
+}
+
+.defeated-card .fallback-content .defense {
+    background-color: #ddeeff;
+    border: 1px solid #aaddff;
+}
+
+.defeated-card .fallback-content .terrain-edges {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    visibility: visible !important;
+}
+
+.defeated-card .fallback-content .terrain-edge {
+    position: absolute;
+    font-size: 12px;
+    opacity: 0.6;
+    line-height: 1;
+}
+
+.defeated-card .fallback-content .edge-top {
+    top: 1px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.defeated-card .fallback-content .edge-right {
+    top: 50%;
+    right: 1px;
+    transform: translateY(-50%);
+}
+
+.defeated-card .fallback-content .edge-bottom {
+    bottom: 1px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.defeated-card .fallback-content .edge-left {
+    top: 50%;
+    left: 1px;
+    transform: translateY(-50%);
+}
+
+/* --- End Defeated Fallback Styles --- */
+
+
+.defeated-card.player1 {
+    border-left: 3px solid #4a90e2;
+}
+
+.defeated-card.player2 {
+    border-left: 3px solid #e94e77;
+}
+
+/* --- Memo Pad Styles --- */
+#memo-popover {
+    position: fixed;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 220px;
+    /* Adjust width as needed */
+    max-height: 80vh;
+    /* Limit height */
+    overflow-y: auto;
+    /* Add scroll if content overflows */
+    background-color: #fdfdfd;
+    border: 1px solid #aaa;
+    border-radius: 8px;
+    box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3);
+    padding: 15px;
+    z-index: 100;
+    /* Ensure it's above other elements */
+    display: none;
+    /* Hidden by default */
+    font-size: 12px;
+}
+
+#memo-popover h5 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+#memo-popover ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#memo-popover li {
+    margin-bottom: 8px;
+    padding: 5px;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    background-color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#memo-popover .memo-unit {
+    font-weight: bold;
+    flex-basis: 45%;
+    /* Adjust as needed */
+    text-align: left;
+}
+
+#memo-popover .memo-terrain {
+    flex-basis: 50%;
+    /* Adjust as needed */
+    text-align: left;
+    /* Align terrain block to left */
+    font-size: 14px;
+    /* Slightly larger emojis */
+    display: grid;
+    /* Use grid for spatial layout */
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 0px;
+    /* Adjust gap as needed */
+    width: 40px;
+    /* Fixed width for the grid */
+    height: 40px;
+    /* Fixed height for the grid */
+    place-items: center;
+    /* Center emojis in grid cells */
+    margin-right: 10px;
+    /* Space between terrain and unit */
+}
+
+#memo-popover .memo-terrain .memo-edge-top {
+    grid-column: 1 / 3;
+    grid-row: 1;
+}
+
+#memo-popover .memo-terrain .memo-edge-right {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    align-self: center;
+}
+
+#memo-popover .memo-terrain .memo-edge-bottom {
+    grid-column: 1 / 3;
+    grid-row: 2;
+}
+
+#memo-popover .memo-terrain .memo-edge-left {
+    grid-column: 1;
+    grid-row: 1 / 3;
+    align-self: center;
+}
+
+#memo-popover .memo-unit {
+    font-weight: bold;
+    flex-basis: 50%;
+    /* Adjust as needed */
+    text-align: right;
+    /* Align unit name to right */
+}
+
+
+#memo-toggle-button {
+    /* background-color removed, will be set dynamically */
+    color: white;
+    /* Keep text white */
+    border: none;
+    /* Assuming it should look like other buttons */
+    padding: 8px 15px;
+    /* Match other buttons */
+    font-size: 14px;
+    /* Match other buttons */
+    border-radius: 4px;
+    /* Match other buttons */
+    margin: 5px;
+    /* Match other buttons */
+    cursor: pointer;
+    /* Ensure cursor is pointer */
+    transition: background-color 0.2s ease;
+    /* Add transition */
+}
+
+#memo-toggle-button:hover {
+    filter: brightness(90%);
+}
+
+/* --- Placement Phase UI --- */
+#placement-controls {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    padding: 15px;
+    border: 1px solid #ccc;
+    background-color: #f9f9f9;
+    width: 90%;
+    max-width: 1000px;
+    text-align: center;
+}
+
+#placement-controls h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.placement-area {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 10px;
+}
+
+.placement-list {
+    /* Keep hidden */
+    display: none;
+}
+
+/* --- Placeholder for Placement --- */
+.placement-placeholder {
+    width: 94px;
+    /* Match new card size */
+    height: 131px;
+    /* Match new card size */
+    border: 2px dashed #aaa;
+    /* Dashed border */
+    border-radius: 5px;
+    background-color: rgba(200, 200, 200, 0.2);
+    /* Slightly transparent background */
+    margin: 2.5px;
+    /* Match card margin */
+    box-sizing: border-box;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 30px;
+    color: #aaa;
+    cursor: copy;
+    /* Indicate placement action */
+    grid-column: var(--grid-x);
+    /* Use CSS variables for position */
+    grid-row: var(--grid-y);
+}
+
+/* Only show hover if it's the player's turn */
+body.my-turn .placement-placeholder:hover {
+    background-color: rgba(180, 180, 180, 0.4);
+    border-color: #888;
+}
+
+/* --- Placement Phase Visual Cards --- */
+.placement-card-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    /* 4 columns */
+    gap: 8px;
+    /* Space between cards */
+    padding: 10px;
+    border: 1px solid #ddd;
+    background-color: #fff;
+    border-radius: 5px;
+    min-height: 280px;
+    /* Keep min height */
+    max-width: 400px;
+    /* Recalculated: 4 * 94px + 3 * 8px */
+    margin: 0 auto;
+    /* Center the grid if container is wider */
+}
+
+.placement-unit-card,
+.placement-terrain-card {
+    width: 94px;
+    /* Match new card size */
+    height: 131px;
+    /* Match new card size */
+    border: 1px solid #aaa;
+    border-radius: 5px;
+    background-color: #fff;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    /* Keep for fallback layout */
+    justify-content: center;
+    /* Center content (image) */
+    align-items: center;
+    /* Center content (image) */
+    padding: 0;
+    /* Removed padding */
+    box-sizing: border-box;
+    /* Border included in size */
+    position: relative;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    font-size: 11px;
+    /* Base font for fallback */
+    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+    display: flex;
+    /* Center image */
+    justify-content: center;
+    align-items: center;
+    background-color: #eee;
+    /* Fallback background */
+}
+
+.placement-unit-card img,
+.placement-terrain-card img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background-color: #fff;
+    /* Image area background */
+}
+
+/* Only show hover if it's the player's turn */
+body.my-turn .placement-unit-card:hover,
+body.my-turn .placement-terrain-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.placement-unit-card.selected-for-placement,
+.placement-terrain-card.selected-for-placement {
+    border: 2px solid #007bff;
+    /* Blue selection border */
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
+    /* Background color is less relevant with images, but keep for border visibility */
+    background-color: #e7f3ff;
+}
+
+/* Fallback styles for placement cards */
+.placement-unit-card .fallback-content,
+.placement-terrain-card .fallback-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0;
+    /* Removed padding */
+    box-sizing: border-box;
+    position: relative;
+    background-color: #fff;
+}
+
+.placement-unit-card .fallback-content .unit-name {
+    font-weight: bold;
+    font-size: 13px;
+    text-align: center;
+    margin-top: 5px;
+}
+
+.placement-unit-card .fallback-content .stats {
+    font-size: 11px;
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 5px;
+}
+
+.placement-unit-card .fallback-content .stats span {
+    padding: 1px 3px;
+    border-radius: 2px;
+    border: 1px solid #ccc;
+}
+
+.placement-unit-card .fallback-content .attack {
+    background-color: #ffdddd;
+    border-color: #ffaaaa;
+}
+
+.placement-unit-card .fallback-content .defense {
+    background-color: #ddeeff;
+    border-color: #aaddff;
+}
+
+.placement-terrain-card .fallback-content .terrain-edges {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.placement-terrain-card .fallback-content .terrain-edge {
+    position: absolute;
+    font-size: 18px;
+    line-height: 1;
+    opacity: 0.8;
+}
+
+.placement-terrain-card .fallback-content .edge-top {
+    top: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.placement-terrain-card .fallback-content .edge-right {
+    top: 50%;
+    right: 2px;
+    transform: translateY(-50%);
+}
+
+.placement-terrain-card .fallback-content .edge-bottom {
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.placement-terrain-card .fallback-content .edge-left {
+    top: 50%;
+    left: 2px;
+    transform: translateY(-50%);
+}
+
+/* --- End Placement Fallback Styles --- */
