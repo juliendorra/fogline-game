@@ -356,18 +356,23 @@ body {
 
 /* --- End HTML Fallback Styles --- */
 
-/* --- Shift styles for adjacent cards (applied to unit layer) --- */
+/* --- Shift styles for adjacent cards (applied ONLY to unit layer) --- */
+/* Shifts by ~33% of card dimensions (W:94px, H:131px) */
 .unit-layer.shifted-right {
-    transform: translateX(15px); /* Increased shift */
+    transform: translateX(31px); /* ~33% of 94px */
+    transition: transform 0.2s ease-out; /* Add transition */
 }
 .unit-layer.shifted-left {
-    transform: translateX(-15px); /* Increased shift */
+    transform: translateX(-31px); /* ~33% of 94px */
+    transition: transform 0.2s ease-out; /* Add transition */
 }
 .unit-layer.shifted-down {
-    transform: translateY(15px); /* Increased shift */
+    transform: translateY(43px); /* ~33% of 131px */
+    transition: transform 0.2s ease-out; /* Add transition */
 }
 .unit-layer.shifted-up {
-    transform: translateY(-15px); /* Increased shift */
+    transform: translateY(-43px); /* ~33% of 131px */
+    transition: transform 0.2s ease-out; /* Add transition */
 }
 /* --- End Shift Styles --- */
 

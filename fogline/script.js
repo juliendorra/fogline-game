@@ -1762,13 +1762,21 @@ function updateUI() {
         const div = card.element;
         // Reset classes, handle owner potentially being null for empty spots
         div.className = `card player${card.owner || 0}`;
-        // Remove state classes AND shift classes
+        // Remove state classes from the main card div
         div.classList.remove(
             'selectable-initial', 'selectable-move', 'selectable-attack', 'not-selectable',
-            'selected', 'hidden',
-            'shifted-left', 'shifted-right', 'shifted-up', 'shifted-down'
+            'selected', 'hidden'
+            // Note: Shift classes are NOT removed from the parent div anymore
         );
         div.style.zIndex = ''; // Reset z-index
+
+        // Explicitly remove shift classes from the unit layer
+        const unitLayerForReset = div.querySelector('.unit-layer');
+        if (unitLayerForReset) {
+            unitLayerForReset.classList.remove('shifted-left', 'shifted-right', 'shifted-up', 'shifted-down');
+            unitLayerForReset.style.transform = ''; // Also reset transform style directly if needed
+        }
+
 
         // Add hidden class based on board state (affects image via CSS)
         if (card.hidden) div.classList.add('hidden');
