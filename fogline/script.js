@@ -813,46 +813,57 @@ function placeCard(gridX, gridY, owner, unitData, terrainDataObj, cardIdToUse = 
     cardDiv.dataset.id = cardId;
     // Click handler added later in applyPlacement if needed
 
-    // Create image element
-    const img = document.createElement('img');
-    // Store unit image path for later reveal
-    img.dataset.unitSrc = unitData.imagePath;
-    // Initially show the terrain image since the card starts hidden
-    img.src = terrainDataObj.imagePath;
+    // --- Create Layered Structure ---
+    const terrainLayerDiv = document.createElement('div');
+    terrainLayerDiv.className = 'terrain-layer';
 
-    // Generate Alt Text (Initial state: showing terrain)
+    const unitLayerDiv = document.createElement('div');
+    // Start with unit hidden. If unitData is null/undefined, it should remain hidden.
+    unitLayerDiv.className = `unit-layer ${!unitData || card.hidden ? 'hidden-state' : ''}`;
+
+    // Create Terrain Image
+    const terrainImg = document.createElement('img');
+    terrainImg.src = terrainDataObj.imagePath;
     const terrainEdges = terrainDataObj.terrainData;
-    const initialAltText = `Terrain [T:${terrainEdges.top}, R:${terrainEdges.right}, B:${terrainEdges.bottom}, L:${terrainEdges.left}] (Hidden Unit)`;
-    img.alt = initialAltText;
-
-    // Add error handler for fallback
-    // Need to pass a serializable version of card data for the fallback function
-    const cardDataForFallback = {
-        id: card.id,
-        unitData: card.unitData,
-        terrainData: card.terrainData,
-        hidden: card.hidden, // Pass current hidden state
-        owner: card.owner
+    terrainImg.alt = `Terrain [T:${terrainEdges.top}, R:${terrainEdges.right}, B:${terrainEdges.bottom}, L:${terrainEdges.left}]`;
+    // Basic error handling for terrain image
+    terrainImg.onerror = () => {
+        card.hasImageError = true; // Mark error on the board data
+        console.error(`Terrain image failed to load: ${terrainImg.src} for card ${card.id}`);
+        terrainLayerDiv.innerHTML = `<div class="fallback-content" style="font-size:10px; color: red;">Terrain Load Error</div>`; // Simple fallback
     };
-    // Use JSON.stringify carefully, ensure no circular references if objects become complex
-    try {
-        img.onerror = () => {
+    terrainLayerDiv.appendChild(terrainImg);
+
+    // Create Unit Image (only if unitData exists)
+    if (unitData) {
+        const unitImg = document.createElement('img');
+        unitImg.src = unitData.imagePath; // Set src even if hidden initially
+        unitImg.alt = `Player ${owner} ${unitData.unitName} (A:${unitData.stats.attack} D:${unitData.stats.defense})`; // Alt text for revealed state
+        // Basic error handling for unit image
+        unitImg.onerror = () => {
             card.hasImageError = true; // Mark error on the board data
-            window.handleImageError(img, cardDataForFallback, 'board');
+            console.error(`Unit image failed to load: ${unitImg.src} for card ${card.id}`);
+            unitLayerDiv.innerHTML = `<div class="fallback-content" style="font-size:10px; color: red;">Unit Load Error</div>`; // Simple fallback
         };
-    } catch (e) {
-        console.error("Error setting onerror handler:", e);
-        // Fallback to basic error handling if stringify fails
-        img.onerror = () => {
-            console.error(`Image failed to load: ${img.src}. Fallback rendering failed due to data issue.`);
-            parentDiv.innerHTML = '<div style="color:red; font-size:10px; text-align:center;">Load Error</div>';
-        };
+        unitLayerDiv.appendChild(unitImg);
+    } else {
+         // If there's no unit, ensure the unit layer is hidden and maybe add placeholder content or leave empty
+         unitLayerDiv.classList.add('hidden-state');
+         // unitLayerDiv.innerHTML = '<!-- No Unit -->'; // Optional placeholder
     }
 
 
-    cardDiv.appendChild(img);
+    // Append layers to card div
+    cardDiv.appendChild(terrainLayerDiv);
+    cardDiv.appendChild(unitLayerDiv);
+    // --- End Layered Structure ---
+
     boardDiv.appendChild(cardDiv);
     card.element = cardDiv;
+    // Store references to layers if needed later, though querying might be simpler
+    // card.terrainLayerElement = terrainLayerDiv;
+    // card.unitLayerElement = unitLayerDiv;
+
     return card;
 }
 
@@ -1642,83 +1653,63 @@ function updateUI() {
         const div = card.element;
         // Reset classes, handle owner potentially being null for empty spots
         div.className = `card player${card.owner || 0}`;
-        div.classList.remove('selectable-initial', 'selectable-move', 'selectable-attack', 'not-selectable', 'selected', 'hidden');
+        // Remove state classes AND shift classes
+        div.classList.remove(
+            'selectable-initial', 'selectable-move', 'selectable-attack', 'not-selectable',
+            'selected', 'hidden',
+            'shifted-left', 'shifted-right', 'shifted-up', 'shifted-down'
+        );
+        div.style.zIndex = ''; // Reset z-index
 
         // Add hidden class based on board state (affects image via CSS)
         if (card.hidden) div.classList.add('hidden');
         if (i === selectedCardIndex) div.classList.add('selected');
 
-        // Update card content (Image or Fallback)
-        const img = div.querySelector('img');
-        const fallbackDiv = div.querySelector('.fallback-content');
+        // --- Update Layer Visibility and Content ---
+        const terrainLayer = div.querySelector('.terrain-layer');
+        const unitLayer = div.querySelector('.unit-layer');
+        const terrainImg = terrainLayer?.querySelector('img');
+        const unitImg = unitLayer?.querySelector('img');
+        // const fallbackDiv = div.querySelector('.fallback-content'); // TODO: Re-integrate fallback if needed
 
-        if (card.hasImageError && fallbackDiv) {
-            // --- Update Fallback HTML ---
-            const unitNameDiv = fallbackDiv.querySelector('.unit-name');
-            const statsDiv = fallbackDiv.querySelector('.stats');
-            const attackSpan = statsDiv?.querySelector('.attack');
-            const defenseSpan = statsDiv?.querySelector('.defense');
-            const terrainEdgesDiv = fallbackDiv.querySelector('.terrain-edges'); // Always visible in fallback
-
-            if (card.unitData) {
-                unitNameDiv.textContent = card.unitData.unitName;
-                attackSpan.textContent = `A: ${card.unitData.stats.attack}`;
-                defenseSpan.textContent = `D: ${card.unitData.stats.defense}`;
-                unitNameDiv.style.visibility = card.hidden ? 'hidden' : 'visible';
-                statsDiv.style.visibility = card.hidden ? 'hidden' : 'visible';
-            } else { // Empty spot
-                unitNameDiv.textContent = '';
-                attackSpan.textContent = `A: -`;
-                defenseSpan.textContent = `D: -`;
-                unitNameDiv.style.visibility = 'hidden';
-                statsDiv.style.visibility = 'hidden';
-                // Ensure hidden class is applied to parent for empty fallback
-                if (!div.classList.contains('hidden')) div.classList.add('hidden');
-            }
-            // Terrain edges are always visible in fallback, update them just in case
-            const terrainData = card.terrainData?.terrainData || { top: '?', right: '?', bottom: '?', left: '?' };
-            terrainEdgesDiv.querySelector('.edge-top').textContent = TERRAIN_EMOJIS[terrainData.top] || '?';
-            terrainEdgesDiv.querySelector('.edge-right').textContent = TERRAIN_EMOJIS[terrainData.right] || '?';
-            terrainEdgesDiv.querySelector('.edge-bottom').textContent = TERRAIN_EMOJIS[terrainData.bottom] || '?';
-            terrainEdgesDiv.querySelector('.edge-left').textContent = TERRAIN_EMOJIS[terrainData.left] || '?';
-
-        } else if (img) {
-            // --- Update Image Source and Alt based on Hidden State ---
+        if (terrainLayer && unitLayer && terrainImg && unitImg) {
             const terrainEdges = card.terrainData.terrainData;
-            const terrainImagePath = card.terrainData.imagePath; // Get terrain path from card data
-            const unitImagePath = img.dataset.unitSrc; // Get unit path from stored attribute
+            const terrainAltText = `Terrain [T:${terrainEdges.top}, R:${terrainEdges.right}, B:${terrainEdges.bottom}, L:${terrainEdges.left}]`;
 
-            if (card.hidden) {
-                // Show Terrain Image
-                if (img.src !== terrainImagePath) {
-                    img.src = terrainImagePath;
+            // Update Terrain Alt Text (always relevant)
+            terrainImg.alt = terrainAltText;
+
+            // Determine Unit Layer Visibility and Content
+            if (card.hidden || !card.unitData) {
+                // Hide Unit Layer
+                if (!unitLayer.classList.contains('hidden-state')) {
+                    unitLayer.classList.add('hidden-state');
                 }
-                img.alt = `Terrain [T:${terrainEdges.top}, R:${terrainEdges.right}, B:${terrainEdges.bottom}, L:${terrainEdges.left}] (Hidden Unit)`;
-                // Ensure hidden class is applied if logic missed it (e.g., empty space)
-                if (!div.classList.contains('hidden')) div.classList.add('hidden');
+                // Ensure parent .card.hidden class is set if no unit (for potential other styling)
+                if (!card.unitData && !div.classList.contains('hidden')) {
+                     div.classList.add('hidden');
+                }
             } else {
-                // Show Unit Image (if unit exists)
-                if (card.unitData && unitImagePath) {
-                    if (img.src !== unitImagePath) {
-                        img.src = unitImagePath;
-                    }
-                    img.alt = `Player ${card.owner} ${card.unitData.unitName} (A:${card.unitData.stats.attack} D:${card.unitData.stats.defense}) on Terrain [T:${terrainEdges.top}, R:${terrainEdges.right}, B:${terrainEdges.bottom}, L:${terrainEdges.left}]`;
-                } else {
-                    // Handle empty revealed space: Show terrain image as fallback
-                    if (img.src !== terrainImagePath) {
-                        img.src = terrainImagePath;
-                    }
-                    img.alt = `Empty Space on Terrain [T:${terrainEdges.top}, R:${terrainEdges.right}, B:${terrainEdges.bottom}, L:${terrainEdges.left}]`;
-                    // Ensure hidden class is applied if it's an empty space (even if 'revealed')
-                    if (!div.classList.contains('hidden')) div.classList.add('hidden');
+                // Show Unit Layer
+                if (unitLayer.classList.contains('hidden-state')) {
+                    unitLayer.classList.remove('hidden-state');
+                }
+                // Update Unit Alt Text (only relevant when shown)
+                unitImg.alt = `Player ${card.owner} ${card.unitData.unitName} (A:${card.unitData.stats.attack} D:${card.unitData.stats.defense}) on ${terrainAltText}`;
+                 // Ensure parent .card.hidden class is removed if unit is revealed
+                if (div.classList.contains('hidden')) {
+                    div.classList.remove('hidden');
                 }
             }
-            // Note: The onerror handler assigned in placeCard should still work.
-        } else if (!card.hasImageError) {
-            // This case shouldn't happen if placeCard worked correctly (either img or fallback exists)
-            console.warn(`Card ID ${card.id} has no image and no fallback content.`);
-            div.innerHTML = '<div style="color:orange; font-size:10px;">Update Error</div>';
+            // Image sources (src) are set once in placeCard and assumed not to change.
+            // If src could change (e.g., different unit images based on state), update here.
+
+        } else {
+             console.warn(`Card ID ${card.id} is missing expected layer elements.`);
+             // Handle missing elements, maybe show an error state
+             div.innerHTML = '<div style="color:red; font-size:10px;">Render Error</div>';
         }
+        // --- End Layer Update ---
 
 
         // Determine Selectable State only during GAMEPLAY and if it's the local player's turn
@@ -1759,6 +1750,36 @@ function updateUI() {
             div.classList.add('not-selectable');
         }
     });
+
+    // --- Apply shifts to neighbors of selected card ---
+    if (selectedCardIndex !== null && gameState === 'GAMEPLAY') {
+        const selected = board[selectedCardIndex];
+        if (selected && selected.element) {
+            // Selected card z-index is handled by the .selected CSS rule now
+            // selected.element.style.zIndex = '10'; // Ensure selected is on top
+
+            const neighbors = [
+                { dx: 1, dy: 0, shiftClass: 'shifted-right' }, // Right neighbor shifts right
+                { dx: -1, dy: 0, shiftClass: 'shifted-left' },  // Left neighbor shifts left
+                { dx: 0, dy: 1, shiftClass: 'shifted-down' }, // Bottom neighbor shifts down
+                { dx: 0, dy: -1, shiftClass: 'shifted-up' }    // Top neighbor shifts up
+            ];
+
+            neighbors.forEach(n => {
+                const neighborCard = findCardByGrid(selected.gridX + n.dx, selected.gridY + n.dy);
+                // Apply shift ONLY if the neighbor card exists, has an element, AND has unitData
+                if (neighborCard && neighborCard.element && neighborCard.unitData) {
+                    // Find the unit layer within the neighbor's element
+                    const neighborUnitLayer = neighborCard.element.querySelector('.unit-layer');
+                    if (neighborUnitLayer) {
+                        // Add the shift class to the unit layer, not the parent card
+                        neighborUnitLayer.classList.add(n.shiftClass);
+                    }
+                }
+            });
+        }
+    }
+    // --- End Apply shifts ---
 
     // Update Defeated Units Area
     const defeatedDiv = document.getElementById('defeated-units');

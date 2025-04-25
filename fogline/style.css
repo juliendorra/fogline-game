@@ -170,8 +170,7 @@ body {
     /* Increased from 105px */
     border: 1px solid #333;
     border-radius: 5px;
-    position: relative;
-    /* Needed for border and absolute positioning */
+    position: relative; /* Ensure this is present for absolute positioned children */
     cursor: default;
     background-color: #fff;
     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
@@ -191,35 +190,61 @@ body {
     /* Fallback background */
 }
 
-/* Style for the image within the card */
-.card img {
+/* --- Card Layer Styles --- */
+.card .terrain-layer,
+.card .unit-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit; /* Inherit border radius from parent */
+    overflow: hidden; /* Clip images within the layer */
+    display: flex; /* Center image */
+    justify-content: center;
+    align-items: center;
+}
+
+.card .terrain-layer {
+    z-index: 1; /* Base layer */
+    background-color: #eee; /* Fallback background if image fails */
+}
+
+.card .unit-layer {
+    z-index: 5; /* Unit layer on top */
+    background-color: transparent; /* Allows terrain to show through if unit image fails transparently */
+    transition: opacity 0.3s ease-in-out; /* Smooth transition for hiding/showing */
+}
+
+.card .terrain-layer img,
+.card .unit-layer img {
     display: block;
     width: 100%;
     height: 100%;
-    object-fit: contain;
-    /* Scale image */
-    background-color: #fff;
-    /* Background for the image area */
-    position: relative;
-    /* Ensure image is layerable */
-    z-index: 1;
-    /* Sit above potential background elements if needed */
+    object-fit: contain; /* Scale image within layer */
+    background-color: #fff; /* Background for the image area itself */
 }
+
+/* State to hide the unit layer */
+.card .unit-layer.hidden-state {
+    opacity: 0;
+    pointer-events: none; /* Prevent interaction when hidden */
+    /* display: none; */ /* Using opacity for smoother transitions */
+}
+/* --- End Card Layer Styles --- */
 
 
 .card.selected {
     border: 2px solid gold;
     box-shadow: 0 0 10px gold;
+    z-index: 10; /* Ensure selected card is on top */
 }
 
-/* Style for hidden cards (image source is changed via JS) */
-.card.hidden img {
-    /* Filter removed - terrain image will be shown clearly */
-    /* filter: brightness(0.6) blur(1px); */
-    /* opacity: 0.8; */
-}
+/* Style for hidden cards is now handled by hiding the .unit-layer */
+/* .card.hidden selector might still be useful for other effects if needed */
 
 /* Fallback for hidden cards if image fails */
+/* TODO: Adjust fallback logic if needed for layers */
 .card.hidden .fallback-content {
     background-color: #888;
     color: #ccc;
@@ -330,6 +355,21 @@ body {
 }
 
 /* --- End HTML Fallback Styles --- */
+
+/* --- Shift styles for adjacent cards (applied to unit layer) --- */
+.unit-layer.shifted-right {
+    transform: translateX(15px); /* Increased shift */
+}
+.unit-layer.shifted-left {
+    transform: translateX(-15px); /* Increased shift */
+}
+.unit-layer.shifted-down {
+    transform: translateY(15px); /* Increased shift */
+}
+.unit-layer.shifted-up {
+    transform: translateY(-15px); /* Increased shift */
+}
+/* --- End Shift Styles --- */
 
 
 /* --- Cursor and Hover based on Action State --- */
