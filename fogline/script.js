@@ -428,6 +428,7 @@ let defeatedUnits = []; // Stores { unitData, terrainData, owner } of defeated u
 let nextCardId = 0; // Unique ID for each card
 let initialPlayerPairings = { 1: [], 2: [] }; // Stores { unitData, terrainData } for memo pad
 let isResolvingAttack = false; // Flag to prevent clicks during attack resolution
+let isShiftKeyDown = false; // Flag for shift-click inspection
 
 // --- Game State & Placement Variables ---
 let gameState = 'CONNECTING'; // 'CONNECTING', 'PLACEMENT', 'GAMEPLAY', 'GAMEOVER', 'DISCONNECTED'
@@ -899,7 +900,8 @@ function applyPlacement(data) {
         // Add card click listeners for gameplay
         board.forEach(card => {
             if (card.element) {
-                card.element.onclick = () => handleCardClick(card.id);
+                // Pass the event object to handleCardClick
+                card.element.onclick = (event) => handleCardClick(card.id, event);
             }
         });
     } else {
@@ -1050,7 +1052,19 @@ function canUnitTraverse(unitData, terrainType) {
 
 // --- Event Handlers (Modified for PeerJS) ---
 
-function handleCardClick(cardId) {
+// Updated signature to accept the event object
+function handleCardClick(cardId, event) {
+    // Check for shift-click first
+    if (gameState === 'GAMEPLAY' && event && event.shiftKey) {
+        const clickedCardIndex = findCardIndexById(cardId);
+        if (clickedCardIndex !== -1) {
+            logMessage("Shift-Click: Inspecting neighbors..."); // Provide feedback
+            applyShiftInspect(clickedCardIndex);
+        }
+        return; // Prevent default click action when shift-clicking
+    }
+
+    // Original logic continues if not shift-clicking
     if (gameState !== 'GAMEPLAY' || isResolvingAttack) return;
     if (currentPlayer !== localPlayerRole) {
         logMessage("It's not your turn.");
@@ -1248,6 +1262,47 @@ function resolveAttackLocally(attackerIndex, defenderIndex, nextPlayer) {
 }
 
 
+// Function to apply temporary shift effect for inspection
+function applyShiftInspect(centerCardIndex) {
+    const centerCard = board[centerCardIndex];
+    if (!centerCard || !centerCard.element) return;
+
+    // Clear existing shifts first (from selection or previous inspect) before applying new ones
+    // This is important if shift is held down and user clicks multiple cards
+    board.forEach(card => {
+        if (card && card.element) {
+            const unitLayer = card.element.querySelector('.unit-layer');
+            if (unitLayer) {
+                unitLayer.classList.remove('shifted-left', 'shifted-right', 'shifted-up', 'shifted-down');
+            }
+        }
+    });
+
+
+    const neighbors = [
+        { dx: 1, dy: 0, shiftClass: 'shifted-right' }, // Right neighbor shifts right
+        { dx: -1, dy: 0, shiftClass: 'shifted-left' },  // Left neighbor shifts left
+        { dx: 0, dy: 1, shiftClass: 'shifted-down' }, // Bottom neighbor shifts down
+        { dx: 0, dy: -1, shiftClass: 'shifted-up' }    // Top neighbor shifts up
+    ];
+
+    neighbors.forEach(n => {
+        const neighborCard = findCardByGrid(centerCard.gridX + n.dx, centerCard.gridY + n.dy);
+        // Apply shift ONLY if the neighbor card exists, has an element, AND has unitData
+        if (neighborCard && neighborCard.element && neighborCard.unitData) {
+            // Find the unit layer within the neighbor's element
+            const neighborUnitLayer = neighborCard.element.querySelector('.unit-layer');
+            if (neighborUnitLayer) {
+                // Add the shift class to the unit layer
+                neighborUnitLayer.classList.add(n.shiftClass);
+            }
+        }
+    });
+
+    // Note: Shifts are cleared automatically when Shift key is released via keyup listener calling updateUI()
+}
+
+// --- Event Handlers (Modified for PeerJS) ---
 function handleBoardClickForPlacement(event) {
     if (gameState !== 'PLACEMENT') return;
     if (currentPlayer !== localPlayerRole) {
@@ -1489,7 +1544,8 @@ function applyBulkPlacement(placementActions) {
     // Add gameplay listeners
     board.forEach(card => {
         if (card.element) {
-            card.element.onclick = () => handleCardClick(card.id);
+            // Pass the event object to handleCardClick
+            card.element.onclick = (event) => handleCardClick(card.id, event);
         }
     });
 
@@ -1829,43 +1885,54 @@ function updateUI() {
         // --- End Layer Update ---
 
 
-        // Determine Selectable State only during GAMEPLAY and if it's the local player's turn
-        if (gameState === 'GAMEPLAY' && localPlayerRole === currentPlayer) {
-            if (selectedCardIndex === null) { // Selecting initial unit
-                // Check unitData exists and belongs to current player
-                if (card.owner === currentPlayer && card.unitData) {
-                    div.classList.add('selectable-initial');
-                } else {
-                    div.classList.add('not-selectable');
-                }
-            } else { // Unit selected, selecting target
-                if (i === selectedCardIndex) {
-                    div.classList.add('not-selectable'); // Can't target self, but allow deselect click
-                } else {
-                    const directionInfo = getDirectionInfo(attackerCard, card);
-                    if (directionInfo && attackerCard.unitData) { // Is adjacent and attacker has unit
-                        const entryTerrainType = card.terrainData.terrainData[directionInfo.opposite];
-                        // Use attacker's unitData for traversal check
-                        if (canUnitTraverse(attackerCard.unitData, entryTerrainType)) {
-                            // Check if target has unitData
-                            if (card.unitData === null || card.unitData === undefined) { // Empty, valid square
-                                div.classList.add('selectable-move');
-                            } else if (card.owner !== currentPlayer) { // Enemy unit
-                                div.classList.add('selectable-attack');
-                            } else { // Own unit
-                                div.classList.add('not-selectable');
-                            }
-                        } else { // Invalid terrain edge
-                            div.classList.add('not-selectable');
-                        }
-                    } else { // Not adjacent or attacker invalid
+        // Determine Selectable State and Cursor only during GAMEPLAY
+        // Cursor logic now also depends on isShiftKeyDown (via body class 'shift-key-down')
+        if (gameState === 'GAMEPLAY') {
+            // If shift is down, all cards get the inspect cursor (handled by CSS)
+            // If shift is NOT down, determine selectable state for normal gameplay cursors
+            if (!isShiftKeyDown && localPlayerRole === currentPlayer) {
+                 if (selectedCardIndex === null) { // Selecting initial unit
+                    // Check unitData exists and belongs to current player
+                    if (card.owner === currentPlayer && card.unitData) {
+                        div.classList.add('selectable-initial');
+                    } else {
                         div.classList.add('not-selectable');
                     }
+                } else { // Unit selected, selecting target
+                    if (i === selectedCardIndex) {
+                        // Keep default cursor for selected card (or let CSS handle it)
+                        // div.classList.add('not-selectable'); // Can still deselect
+                    } else {
+                        const directionInfo = getDirectionInfo(attackerCard, card);
+                        if (directionInfo && attackerCard.unitData) { // Is adjacent and attacker has unit
+                            const entryTerrainType = card.terrainData.terrainData[directionInfo.opposite];
+                            // Use attacker's unitData for traversal check
+                            if (canUnitTraverse(attackerCard.unitData, entryTerrainType)) {
+                                // Check if target has unitData
+                                if (card.unitData === null || card.unitData === undefined) { // Empty, valid square
+                                    div.classList.add('selectable-move');
+                                } else if (card.owner !== currentPlayer) { // Enemy unit
+                                    div.classList.add('selectable-attack');
+                                } else { // Own unit
+                                    div.classList.add('not-selectable');
+                                }
+                            } else { // Invalid terrain edge
+                                div.classList.add('not-selectable');
+                            }
+                        } else { // Not adjacent or attacker invalid
+                            div.classList.add('not-selectable');
+                        }
+                    }
                 }
+            } else if (!isShiftKeyDown) { // Not player's turn and shift is not down
+                 div.classList.add('not-selectable');
             }
-        } else { // Not player's turn or not gameplay phase
-            div.classList.add('not-selectable');
+            // If isShiftKeyDown is true, no selectable classes are added here,
+            // allowing the CSS rule for .shift-key-down .card to apply the inspect cursor.
+        } else { // Not gameplay phase
+             div.classList.add('not-selectable'); // Apply default non-selectable outside gameplay
         }
+
     });
 
     // --- Apply shifts to neighbors of selected card ---
@@ -1930,6 +1997,28 @@ function logMessage(msg) {
 
 // --- Initialization ---
 document.addEventListener("DOMContentLoaded", () => {
+
+    // --- Shift Key Listeners ---
+    window.addEventListener('keydown', (event) => {
+        if (event.key === 'Shift' && !isShiftKeyDown) {
+            isShiftKeyDown = true;
+            document.body.classList.add('shift-key-down');
+            // Optionally call updateUI() here if immediate cursor change is needed,
+            // but CSS approach might be sufficient and less performance intensive.
+            // updateUI();
+        }
+    });
+
+    window.addEventListener('keyup', (event) => {
+        if (event.key === 'Shift') {
+            isShiftKeyDown = false;
+            document.body.classList.remove('shift-key-down');
+            // Call updateUI to clear temporary shifts and reset cursors
+            updateUI();
+        }
+    });
+    // --- End Shift Key Listeners ---
+
     // Initial UI state before connection attempt
     document.getElementById('info').textContent = 'Initializing Peer connection...';
     document.getElementById('peer-status').textContent = 'Initializing...';

@@ -378,29 +378,54 @@ body {
 
 
 /* --- Cursor and Hover based on Action State --- */
-.selectable-initial {
+
+/* Default cursors for normal gameplay (when shift is NOT pressed) */
+body:not(.shift-key-down) .selectable-initial {
     cursor: pointer;
 }
 
-.selectable-move {
+body:not(.shift-key-down) .selectable-move {
     cursor: pointer;
 }
 
-.selectable-attack {
+body:not(.shift-key-down) .selectable-attack {
     cursor: crosshair;
 }
 
-.not-selectable {
+body:not(.shift-key-down) .not-selectable {
     cursor: not-allowed;
 }
+/* Selected card gets default cursor unless overridden by shift */
+body:not(.shift-key-down) .card.selected {
+    cursor: default;
+}
 
-/* Only apply hover effects if it's the player's turn */
-body.my-turn .selectable-initial:hover,
-body.my-turn .selectable-move:hover,
-body.my-turn .selectable-attack:hover {
+
+/* Shift-Inspect Cursor: Applied to ALL cards during gameplay when shift is down */
+/* Use 'help' or 'zoom-in' */
+body.shift-key-down #board .card {
+    cursor: help !important; /* Use !important to ensure override */
+}
+
+/* Prevent hover effects when shift is down */
+body.shift-key-down .card:hover {
+     transform: none;
+     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2); /* Keep base shadow or remove */
+}
+
+/* Only apply hover effects if it's the player's turn AND shift is NOT pressed */
+body.my-turn:not(.shift-key-down) .selectable-initial:hover,
+body.my-turn:not(.shift-key-down) .selectable-move:hover,
+body.my-turn:not(.shift-key-down) .selectable-attack:hover {
     transform: translateY(-3px);
     box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.3);
 }
+
+
+/* These rules are now handled above with :not(.shift-key-down) */
+
+/* Only apply hover effects if it's the player's turn AND shift is NOT pressed */
+/* This rule was moved and modified above */
 
 
 /* --- Player Border Styles --- */
