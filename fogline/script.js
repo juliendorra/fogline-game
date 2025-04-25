@@ -1,6 +1,9 @@
 // Import nanoid
 import { nanoid, customAlphabet } from 'https://cdn.jsdelivr.net/npm/nanoid@4.0.2/+esm'
+// Import autoPlacement logic
+import { generateAutoPlacements } from './autoPlacement.js';
 
+// Define custom nanoid generator
 // Define custom nanoid generator
 const alphabet = "123456789bcdfghjkmnpqrstvwxyz";
 const generatePeerId = customAlphabet(alphabet, 12); // Use this function to generate IDs
@@ -387,6 +390,7 @@ window.resetGame = resetGame;
 window.toggleMemoPad = toggleMemoPad;
 window.copyPeerIdToClipboard = copyPeerIdToClipboard;
 window.selectPeerIdText = selectPeerIdText; // Expose this function too
+window.handleAutoPlaceClick = handleAutoPlaceClick; // Expose auto-place handler
 
 // --- Display Name Function ---
 function saveDisplayName() {
@@ -1414,6 +1418,94 @@ function toggleMemoPad() {
     }
 }
 
+// --- Auto Placement ---
+function handleAutoPlaceClick() {
+    if (gameState !== 'PLACEMENT') {
+        logMessage("Auto-placement only available during the placement phase.");
+        return;
+    }
+    if (localPlayerRole !== 1) {
+        logMessage("Only Player 1 (Host) can initiate auto-placement.");
+        return;
+    }
+    if (!conn || !conn.open) {
+        logMessage("Cannot auto-place: Not connected.");
+        return;
+    }
+    if (placedCardPairCount > 0) {
+        logMessage("Cannot auto-place after manual placements have started.");
+        // Or: Add confirmation to overwrite? For now, prevent.
+        return;
+    }
+
+    logMessage("Initiating auto-placement...");
+
+    // Use the initial pairings stored during resetGame
+    // These contain the full, originally shuffled lists needed by generateAutoPlacements
+    const p1Units = initialPlayerPairings[1].map(p => p.unitData);
+    const p1Terrains = initialPlayerPairings[1].map(p => p.terrainData);
+    const p2Units = initialPlayerPairings[2].map(p => p.unitData);
+    const p2Terrains = initialPlayerPairings[2].map(p => p.terrainData);
+
+    // Generate all placement actions
+    const placementActions = generateAutoPlacements(p1Units, p1Terrains, p2Units, p2Terrains, nextCardId);
+
+    if (!placementActions || placementActions.length !== TOTAL_CARD_PAIRS_TO_PLACE) {
+        logMessage("Auto-placement generation failed. Please place manually or reset.");
+        console.error("Auto-placement generation failed or returned incorrect number of actions.");
+        return;
+    }
+
+    // Send the results to the other player
+    sendData('autoPlacementResult', { actions: placementActions });
+
+    // Apply the placements locally
+    applyBulkPlacement(placementActions);
+}
+
+function applyBulkPlacement(placementActions) {
+    logMessage(`Applying ${placementActions.length} auto-placements...`);
+
+    // Disable board click listener immediately
+    document.getElementById('board').removeEventListener('click', handleBoardClickForPlacement);
+
+    // Clear available units/terrains visually (they are conceptually used up)
+    playerAvailableUnits = { 1: [], 2: [] };
+    playerAvailableTerrains = { 1: [], 2: [] };
+    selectedUnitDataForPlacement = null;
+    selectedTerrainDataForPlacement = null;
+
+    // Place all cards without intermediate UI updates
+    placementActions.forEach(action => {
+        // placeCard updates board array, placedPositions, nextCardId, and creates element
+        placeCard(action.gridX, action.gridY, action.owner, action.unitData, action.terrainData, action.cardId);
+    });
+
+    // Update game state after all placements
+    placedCardPairCount = TOTAL_CARD_PAIRS_TO_PLACE;
+    gameState = 'GAMEPLAY';
+    currentPlayer = 1; // Player 1 always starts gameplay
+
+    // Add gameplay listeners
+    board.forEach(card => {
+        if (card.element) {
+            card.element.onclick = () => handleCardClick(card.id);
+        }
+    });
+
+    logMessage("Auto-placement complete! Player 1's turn to move or attack.");
+
+    // Update UI once at the end
+    updateUI();
+
+    // Refresh memo pad if open
+    const memoPopover = document.getElementById('memo-popover');
+    if (memoPopover && window.getComputedStyle(memoPopover).display !== 'none') {
+        displayMemoPadContent(); // Refresh content for local player
+    }
+}
+
+
 // --- Data Handling ---
 function handleReceivedData(data) {
     const { type, payload } = data;
@@ -1432,6 +1524,14 @@ function handleReceivedData(data) {
             break;
         case 'attackResult':
             applyAttackResult(payload);
+            break;
+        case 'autoPlacementResult':
+            if (localPlayerRole === 2 && gameState === 'PLACEMENT') {
+                logMessage("Received auto-placement actions from Host.");
+                applyBulkPlacement(payload.actions);
+            } else {
+                 console.warn("Received autoPlacementResult in unexpected state/role:", gameState, localPlayerRole);
+            }
             break;
         case 'displayName':
             opponentDisplayName = payload.name;
@@ -1459,21 +1559,22 @@ function updateUI() {
     const connectionDetails = document.getElementById('connection-details'); // Get details element
     const connectionSummary = document.getElementById('connection-summary'); // Get summary element
     const peerStatusSpan = document.getElementById('peer-status'); // Get status span inside controls
+    const autoPlaceButton = document.getElementById('auto-place-button'); // Get auto-place button
 
     // Update Connection Summary Text (use opponent name if available)
-    let statusText = peerStatusSpan.textContent;
-    if (conn && conn.open && opponentDisplayName) {
-        statusText = `Connected to ${opponentDisplayName}`;
-    } else if (conn && conn.open) {
+    let statusText; // Declare first
+    if (opponentDisplayName && conn && conn.open) { // Check opponent name AND connection is open
+        statusText = `Connected to ${opponentDisplayName} (${conn.peer})`; // Show name and ID
+    } else if (conn && conn.open) { // If connected but no opponent name yet (or connection lost name)
         statusText = `Connected to ${conn.peer}`;
-    } else if (myPeerId) {
+    } else if (myPeerId) { // If peer is initialized but not connected
         statusText = 'Waiting for connection...';
-    } else {
+    } else { // Before peer initialization completes
         statusText = 'Initializing...';
     }
     connectionSummary.textContent = `Connection Status: ${statusText}`;
     // Also update the status span inside the details view
-    peerStatusSpan.textContent = statusText;
+    peerStatusSpan.textContent = statusText; // Use the same calculated statusText
 
 
     // Set body class based on whose turn it is locally
@@ -1509,10 +1610,17 @@ function updateUI() {
         connectionSummary.style.cursor = 'default'; // Summary itself is not clickable to close
         // Disable the toggle functionality via CSS might be cleaner, but JS works too
         connectionSummary.onclick = (e) => e.preventDefault(); // Prevent toggling via summary click
+        if (autoPlaceButton) autoPlaceButton.style.display = 'none'; // Hide auto-place button
 
     } else if (gameState === 'PLACEMENT') {
         placementControlsDiv.style.display = 'block';
         infoDiv.style.display = 'none';
+        // Show and manage auto-place button state
+        if (autoPlaceButton) {
+            autoPlaceButton.style.display = 'inline-block';
+            // Disable if not Player 1 OR if any cards have already been placed manually
+            autoPlaceButton.disabled = (localPlayerRole !== 1 || placedCardPairCount > 0);
+        }
         // Allow connection details to be collapsed when game starts
         if (!connectionDetails.hasAttribute('data-initially-closed')) {
             connectionDetails.open = false; // Close by default once placement starts
@@ -1616,6 +1724,7 @@ function updateUI() {
         connectionSummary.onclick = null; // Remove the toggle prevention
 
         memoButton.style.display = 'inline-block';
+        if (autoPlaceButton) autoPlaceButton.style.display = 'none'; // Hide auto-place button
         boardDiv.style.cursor = 'default';
 
         // Update Info Bar (use unitData to count)

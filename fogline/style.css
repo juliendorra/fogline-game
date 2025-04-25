@@ -737,6 +737,17 @@ button:disabled {
     filter: brightness(90%);
 }
 
+#auto-place-button {
+    /* Styles already inline, but can add more here if needed */
+    /* e.g., font-weight: bold; */
+}
+#auto-place-button:disabled {
+    background-color: #cccccc !important; /* Ensure disabled style overrides inline */
+    color: #666 !important;
+    cursor: not-allowed;
+}
+
+
 /* --- Placement Phase UI --- */
 #placement-controls {
     margin-top: 10px;
