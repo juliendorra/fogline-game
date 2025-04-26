@@ -2019,6 +2019,28 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     // --- End Shift Key Listeners ---
 
+    // --- Game Area Click Listener (for deselecting) ---
+    const gameArea = document.getElementById('game-area');
+    if (gameArea) {
+        gameArea.addEventListener('click', (event) => {
+            // Only act during gameplay and if a card is selected
+            if (gameState === 'GAMEPLAY' && selectedCardIndex !== null) {
+                // Check if the click target is NOT a card or inside a card
+                const clickedCardElement = event.target.closest('.card');
+                if (!clickedCardElement) {
+                    // Click was outside any card element
+                    logMessage("Clicked outside, card deselected.");
+                    selectedCardIndex = null;
+                    updateUI();
+                }
+                // If clickedCardElement is not null, the click was on a card,
+                // and handleCardClick will manage the selection/deselection.
+            }
+        });
+    }
+    // --- End Game Area Click Listener ---
+
+
     // Initial UI state before connection attempt
     document.getElementById('info').textContent = 'Initializing Peer connection...';
     document.getElementById('peer-status').textContent = 'Initializing...';
