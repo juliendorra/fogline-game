@@ -863,6 +863,13 @@ function placeCard(gridX, gridY, owner, unitData, terrainDataObj, cardIdToUse = 
     cardDiv.appendChild(unitLayerDiv);
     // --- End Layered Structure ---
 
+    // Add mousedown handler to prevent text selection
+    cardDiv.onmousedown = (event) => {
+        event.preventDefault(); // Prevent text selection
+        event.stopPropagation(); // Stop event from bubbling up
+        return false; // Additional prevention for older browsers
+    };
+    
     boardDiv.appendChild(cardDiv);
     card.element = cardDiv;
     // Store references to layers if needed later, though querying might be simpler
@@ -902,6 +909,13 @@ function applyPlacement(data) {
             if (card.element) {
                 // Pass the event object to handleCardClick
                 card.element.onclick = (event) => handleCardClick(card.id, event);
+                
+                // Add mousedown handler to prevent text selection
+                card.element.onmousedown = (event) => {
+                    event.preventDefault(); // Prevent text selection
+                    event.stopPropagation(); // Stop event from bubbling up
+                    return false; // Additional prevention for older browsers
+                };
             }
         });
     } else {
@@ -1054,6 +1068,11 @@ function canUnitTraverse(unitData, terrainType) {
 
 // Updated signature to accept the event object
 function handleCardClick(cardId, event) {
+    // Prevent default behavior for all card clicks to avoid text selection
+    if (event) {
+        event.preventDefault();
+    }
+    
     // Check for shift-click first
     if (gameState === 'GAMEPLAY' && event && event.shiftKey) {
         const clickedCardIndex = findCardIndexById(cardId);
@@ -1546,6 +1565,13 @@ function applyBulkPlacement(placementActions) {
         if (card.element) {
             // Pass the event object to handleCardClick
             card.element.onclick = (event) => handleCardClick(card.id, event);
+            
+            // Add mousedown handler to prevent text selection
+            card.element.onmousedown = (event) => {
+                event.preventDefault(); // Prevent text selection
+                event.stopPropagation(); // Stop event from bubbling up
+                return false; // Additional prevention for older browsers
+            };
         }
     });
 
@@ -1708,6 +1734,12 @@ function updateUI() {
             placeholder.style.setProperty('--grid-y', y);
             placeholder.dataset.gridX = x;
             placeholder.dataset.gridY = y;
+            // Add mousedown handler to prevent text selection
+            placeholder.onmousedown = (event) => {
+                event.preventDefault(); // Prevent text selection
+                event.stopPropagation(); // Stop event from bubbling up
+                return false; // Additional prevention for older browsers
+            };
             boardDiv.appendChild(placeholder);
         });
 
@@ -1735,6 +1767,12 @@ function updateUI() {
                 cardDiv.appendChild(img);
 
                 cardDiv.onclick = () => selectUnitForPlacement(unitData); // Pass the whole object
+                // Add mousedown handler to prevent text selection
+                cardDiv.onmousedown = (event) => {
+                    event.preventDefault(); // Prevent text selection
+                    event.stopPropagation(); // Stop event from bubbling up
+                    return false; // Additional prevention for older browsers
+                };
                 // Check if this object is the selected one
                 if (selectedUnitDataForPlacement && selectedUnitDataForPlacement.imagePath === unitData.imagePath) {
                     cardDiv.classList.add('selected-for-placement');
@@ -1755,6 +1793,12 @@ function updateUI() {
                 cardDiv.appendChild(img);
 
                 cardDiv.onclick = () => selectTerrainForPlacement(terrainDataObj); // Pass the whole object
+                // Add mousedown handler to prevent text selection
+                cardDiv.onmousedown = (event) => {
+                    event.preventDefault(); // Prevent text selection
+                    event.stopPropagation(); // Stop event from bubbling up
+                    return false; // Additional prevention for older browsers
+                };
                 // Check if this object is the selected one
                 if (selectedTerrainDataForPlacement && selectedTerrainDataForPlacement.imagePath === terrainDataObj.imagePath) {
                     cardDiv.classList.add('selected-for-placement');
@@ -1997,6 +2041,15 @@ function logMessage(msg) {
 
 // --- Initialization ---
 document.addEventListener("DOMContentLoaded", () => {
+    // Add global mousedown handler to the board to prevent text selection
+    const boardDiv = document.getElementById('board');
+    if (boardDiv) {
+        boardDiv.addEventListener('mousedown', (event) => {
+            // Prevent text selection on the board
+            event.preventDefault();
+            return false;
+        });
+    }
 
     // --- Shift Key Listeners ---
     window.addEventListener('keydown', (event) => {

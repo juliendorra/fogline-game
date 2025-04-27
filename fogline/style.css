@@ -156,11 +156,19 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+    user-select: none; /* Prevent text selection */
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE/Edge */
 }
 
 #board {
     display: inline-grid;
     padding: 27.5px;
+    user-select: none; /* Prevent text selection */
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE/Edge */
 }
 
 .card {
@@ -188,6 +196,10 @@ body {
     /* Keep overflow hidden */
     background-color: #ddd;
     /* Fallback background */
+    user-select: none; /* Prevent text selection */
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE/Edge */
 }
 
 /* --- Card Layer Styles --- */
@@ -830,6 +842,10 @@ button:disabled {
     grid-column: var(--grid-x);
     /* Use CSS variables for position */
     grid-row: var(--grid-y);
+    user-select: none; /* Prevent text selection */
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE/Edge */
 }
 
 /* Only show hover if it's the player's turn */
@@ -889,6 +905,10 @@ body.my-turn .placement-placeholder:hover {
     align-items: center;
     background-color: #eee;
     /* Fallback background */
+    user-select: none; /* Prevent text selection */
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE/Edge */
 }
 
 .placement-unit-card img,
