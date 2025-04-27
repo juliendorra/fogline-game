@@ -233,8 +233,8 @@ body {
     display: block;
     width: 100%;
     height: 100%;
-    object-fit: contain; /* Scale image within layer */
-    background-color: #fff; /* Background for the image area itself */
+    object-fit: contain;
+    /* Scale image within layer */
 }
 
 /* State to hide the unit layer */
