@@ -206,14 +206,11 @@ async function main() {
                 ctx.font = `${FONT_SIZE_STATS}px ${FONT_FAMILY}`;
                 ctx.textBaseline = "bottom"; // Align stats to bottom padding
 
-                const defenseText = `Defense: ${stats.defense}`;
+                const attackText = `A ${stats.attack}`;
+                const defenseText = `D ${stats.defense}`;
                 const defenseY = CARD_HEIGHT - TEXT_MARGIN_VERTICAL; // Position Defense using bottom margin
-                ctx.fillText(defenseText, TEXT_MARGIN_LEFT, defenseY); // Use left margin
+                ctx.fillText(attackText + " " + defenseText, TEXT_MARGIN_LEFT, defenseY); // Use left margin
 
-                const attackText = `Attack: ${stats.attack}`;
-                // Position Attack slightly above Defense (adjust spacing with font size)
-                const attackY = defenseY - FONT_SIZE_STATS * 1.2; // Add a small gap (1.2 line height)
-                ctx.fillText(attackText, TEXT_MARGIN_LEFT, attackY); // Use left margin
 
                 // 4. Save the generated card
                 const safeUnitName = unitName.replace(/\s+/g, '_').toLowerCase();
