@@ -7,3 +7,6 @@ deno run --allow-read --allow-write --allow-net generate_unit_cards.ts --marginV
 deno run --allow-read --allow-write --allow-net compress_images.ts
 
 deno run --allow-read --allow-write --allow-net generate_print_sheets.ts
+
+# Generate A6 memo sheet (optional, uses default asset paths)
+deno run --allow-read --allow-write --allow-net generate_memo_sheets.ts
