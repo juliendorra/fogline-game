@@ -104,6 +104,31 @@ const INPUT_ICON_PATHS = {
 
 // --- Helper Functions ---
 
+// Function to sort terrain cards by emoji Unicode values (left, top, right, bottom)
+function sortTerrainCards(cards: typeof fixedTerrainCards): typeof fixedTerrainCards {
+    // Create a mapping of terrain types to their emoji Unicode values for sorting
+    const terrainValues = {
+        [TERRAIN_TYPES.PLAINS]: 1, // 🏞️ Plains (lowest value)
+        [TERRAIN_TYPES.FOREST]: 2, // 🌲 Forest (middle value)
+        [TERRAIN_TYPES.MOUNTAIN]: 3, // ⛰️ Mountain (highest value)
+    };
+
+    // Create a copy of the cards array to sort
+    return [...cards].sort((a, b) => {
+        // Sort by left, then top, then right, then bottom
+        const leftDiff = terrainValues[a.left] - terrainValues[b.left];
+        if (leftDiff !== 0) return leftDiff;
+        
+        const topDiff = terrainValues[a.top] - terrainValues[b.top];
+        if (topDiff !== 0) return topDiff;
+        
+        const rightDiff = terrainValues[a.right] - terrainValues[b.right];
+        if (rightDiff !== 0) return rightDiff;
+        
+        return terrainValues[a.bottom] - terrainValues[b.bottom];
+    });
+}
+
 async function loadImageBytes(filePath: string): Promise<Uint8Array | null> {
     try {
         const bytes = await Deno.readFile(filePath);
@@ -239,7 +264,9 @@ async function main() {
     }
 
     // --- Draw Rows (Terrain Icons + Checkbox Grid) ---
-    const numRows = fixedTerrainCards.length; // Should be 8
+    // Sort terrain cards by emoji Unicode values (left, top, right, bottom)
+    const sortedTerrainCards = sortTerrainCards(fixedTerrainCards);
+    const numRows = sortedTerrainCards.length; // Should be 8
     // Start drawing rows below the unit headers
     let currentY = unitHeaderY - FONT_SIZE - LINE_SPACING; // Start Y for the first row content
 
@@ -257,7 +284,7 @@ async function main() {
         const rowCenterY = rowTopY - itemHeight / 2; // Vertical center for the current row
 
         // --- Draw Left Column (Terrain Icons - Spatially) ---
-        const terrainCard = fixedTerrainCards[i];
+        const terrainCard = sortedTerrainCards[i];
         const icons = {
             top: embeddedIcons[terrainCard.top],
             bottom: embeddedIcons[terrainCard.bottom],
